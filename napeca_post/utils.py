@@ -2,11 +2,17 @@ import h5py
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import json
 import pickle
 from sklearn.preprocessing import StandardScaler
 import seaborn as sns
 from matplotlib.colors import ListedColormap
 import warnings
+
+
+def open_json(json_fpath):
+    with open(json_fpath) as json_file:
+        return json.load(json_file)
 
 
 def zscore_(data, baseline_samples):
@@ -166,7 +172,7 @@ def remove_trials_out_of_bounds(data_end, these_frame_events, start_samp, end_sa
     return np.array(keep_events)
 
 
-def extract_trial_data(save_dir, data, tvec, start_end_samp, frame_events, conditions, baseline_start_end_samp=None):
+def extract_trial_data(data, tvec, start_end_samp, frame_events, conditions, baseline_start_end_samp=None, save_dir=None):
     """
         Takes a 3d video (across a whole session) and cuts out trials based on event times.
         Also groups trial data by condition
@@ -287,8 +293,9 @@ def extract_trial_data(save_dir, data, tvec, start_end_samp, frame_events, condi
         data_dict[condition]['num_trials'] = num_trials_cond
         data_dict[condition]['tvec'] = tvec
 
-        with open(os.path.join(save_dir, 'event_data_dict.pkl'), 'wb') as save_handle:
-            pickle.dump(data_dict, save_handle)
+        if save_dir:
+            with open(os.path.join(save_dir, 'event_data_dict.pkl'), 'wb') as save_handle:
+                pickle.dump(data_dict, save_handle)
 
     return data_dict
 
