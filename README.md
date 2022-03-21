@@ -1,5 +1,5 @@
 # NAPE_imaging_postprocess
- Package for functional imaging postprocessing analysis
+ Package for functional imaging postprocessing analysis. The primary goal is to take time-series data from simultaneously-recorded cells/ROIs and event (behavior and/or manipulations) timing to gain an understanding of how individual and groups of cells relate to such external manipulations.
  
  # Anaconda Environment Installation:
  
