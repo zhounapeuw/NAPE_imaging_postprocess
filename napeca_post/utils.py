@@ -1,9 +1,10 @@
-import h5py
-import numpy as np
-import matplotlib.pyplot as plt
 import os
 import json
 import pickle
+import h5py
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
 from sklearn.preprocessing import StandardScaler
 import seaborn as sns
 from matplotlib.colors import ListedColormap
@@ -330,3 +331,15 @@ def time_to_samples(trial_tvec, analysis_window):
 
     return analysis_svec
 
+
+def df_to_dict(fpath):
+    """
+    Turns a csv containing events names (column 0) and frame samples (column 1) into a dictionary where keys are event names
+    and values are lists containing each event's frame samples
+    """
+
+    event_frames_dict = {}
+    event_frames_df = pd.read_csv(fpath)
+    for condition in event_frames_df['event'].unique():
+        event_frames_dict[condition] = list(event_frames_df[event_frames_df['event'] == condition]['sample'])
+    return event_frames_dict
