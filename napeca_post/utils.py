@@ -57,8 +57,8 @@ def load_signals(fpath):
     elif 'csv' in fext:
         df_signals = pd.read_csv(glob_signal_files[0])
         if 'Time(s)/Cell Status' in df_signals.values:
-            # for inscopix data, drop first row and column, and transpose
-            signals = np.transpose(df_signals.drop([0], axis=0).iloc[:, 1:].values.astype(np.float32))
+            # for inscopix data, drop first two rows and first column, and transpose
+            signals = np.transpose(df_signals.drop([0,1], axis=0).iloc[:, 1:].values.astype(np.float32))
         else:
             signals = df_signals.values
 
