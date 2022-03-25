@@ -3,6 +3,7 @@ import json
 import pickle
 import h5py
 import numpy as np
+import glob
 import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
@@ -43,6 +44,25 @@ def load_h5(fpath):
     """ typically it's good to have time as the last dimension because one doesn't usually iterate through time, so we'll
      reorganize the data dimension order"""
     return data_snip.transpose(1, 2, 0)
+
+
+def load_signals(fpath):
+    ### load and prepare time-series data
+    glob_signal_files = glob.glob(fpath)
+    _, fext = os.path.splitext(glob_signal_files[0])
+    if len(glob_signal_files) == 0:
+        print('Warning: No or signal files detected; please check your fname and fdir')
+    if 'npy' in fext:
+        signals = np.squeeze(np.load(glob_signal_files[0]))
+    elif 'csv' in fext:
+        df_signals = pd.read_csv(glob_signal_files[0])
+        if 'Time(s)/Cell Status' in df_signals.values:
+            # for inscopix data, drop first row and column, and transpose
+            signals = np.transpose(df_signals.drop([0], axis=0).iloc[:, 1:].values.astype(np.float32))
+        else:
+            signals = df_signals.values
+
+    return signals
 
 
 def plot_single_img(to_plot, frame_num):
