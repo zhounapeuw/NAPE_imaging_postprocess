@@ -55,7 +55,7 @@ def load_signals(fpath):
     if 'npy' in fext:
         signals = np.squeeze(np.load(glob_signal_files[0]))
     elif 'csv' in fext:
-        df_signals = pd.read_csv(glob_signal_files[0])
+        df_signals = pd.read_csv(glob_signal_files[0], header=None)
         if 'Time(s)/Cell Status' in df_signals.values:
             # for inscopix data, drop first two rows and first column, and transpose
             signals = np.transpose(df_signals.drop([0,1], axis=0).iloc[:, 1:].values.astype(np.float32))
