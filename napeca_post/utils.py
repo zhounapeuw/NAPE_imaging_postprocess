@@ -35,6 +35,7 @@ def check_exist_dir(path):
         os.mkdir(path)
     return path
 
+##### LOADING FUNCTIONS
 
 def load_h5(fpath):
     data_h5file = h5py.File(fpath, 'r')
@@ -55,7 +56,7 @@ def load_signals(fpath):
     if 'npy' in fext:
         signals = np.squeeze(np.load(glob_signal_files[0]))
     elif 'csv' in fext:
-        df_signals = pd.read_csv(glob_signal_files[0])
+        df_signals = pd.read_csv(glob_signal_files[0], header=None)
         if 'Time(s)/Cell Status' in df_signals.values:
             # for inscopix data, drop first two rows and first column, and transpose
             signals = np.transpose(df_signals.drop([0,1], axis=0).iloc[:, 1:].values.astype(np.float32))
@@ -64,6 +65,7 @@ def load_signals(fpath):
 
     return signals
 
+##### PLOTTING FUNCTIONS
 
 def plot_single_img(to_plot, frame_num):
     plt.figure(figsize=(7, 7))
@@ -131,6 +133,9 @@ def subplot_heatmap(axs, title, image, cmap=diverge_cmap, clims=None, zoom_windo
 
 def dict_key_len(dict_, key):
     return len(dict_[key])
+
+
+###### DATA PROCESSING FUNCTIONS
 
 
 def make_tile(start, end, num_rep):
@@ -350,6 +355,15 @@ def time_to_samples(trial_tvec, analysis_window):
     analysis_svec = np.arange(win_start_end_samp[0], win_start_end_samp[1])
 
     return analysis_svec
+
+
+def calc_dff(activity_vec):
+    """
+    Needs to be used with: np.apply_along_axis(calc_dff, 1, roi_signal_sima)
+    Alternatively one can apply np.vstack(np.mean(data, axis=1)) onto whole array without needing to apply to each row
+    """
+    mean_act = np.nanmean(activity_vec)
+    return (activity_vec-mean_act)/mean_act
 
 
 def df_to_dict(fpath):
