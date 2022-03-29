@@ -18,6 +18,9 @@
 * __s2p_conversion__: Processes and converts suite2p output signals, and saves a dataframe or np array of neuropil-corrected roi activity traces as both a csv and npy file. Either output files can be used for downstream analyses (eg. event_rel_analysis, s2p_plot_rois_and_activity)
 * __s2p_plot_rois_and_activity__: Plot the cell ROI contours from Suite2p onto the session's projection image, and generates lineplots for each ROI's whole-session activity trace
 
+# SIMA-related Modules:
+* __sima_plot_ROI_contours__: Plot the cell ROI contours from SIMA/NAPECA onto the session's projection image, and generates lineplots for each ROI's whole-session activity trace
+
 # How should you format your activity/signal data:
 
 1) If you are using Inscopix: reference the csv containing ROI signals 
