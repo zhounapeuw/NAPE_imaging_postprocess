@@ -62,3 +62,8 @@
 
 ### ROI-averaged activity traces after clustering (Example of spectral clustering):
 <img width="600" alt="cluster_roiAvg_traces" src="https://github.com/zhounapeuw/NAPE_imaging_postprocess/blob/main/docs/_images/cluster_roiAvg_traces.png">
+
+## Authors
+
+* **Zhe Charles Zhou** - *Initial and ongoing work; Director* - [Zhou NAPE UW](https://github.com/zhounapeuw)
+* **Lauren Ran Liao** - *Machine Learning Development* - [Lauren Liao](https://github.com/lr5029)
