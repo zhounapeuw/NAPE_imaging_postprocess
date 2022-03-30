@@ -21,6 +21,18 @@
 # SIMA-related Modules:
 * __sima_plot_ROI_contours__: Plot the cell ROI contours from SIMA/NAPECA onto the session's projection image, and generates lineplots for each ROI's whole-session activity trace
 
+# Example workflows:
+#### Ran NAPECA pipeline for preprocessing:
+1) Preprocess (motion correct, signal extract, neuropil correct) using NAPECA pipeline
+2) If you want to plot ROI contours and associated whole-session activity, run sima_plot_ROI_contours.ipynb
+3) The user should create an event CSV that contains trial event types and their timing (see example below) or if using Bruker data, generate a pickle file using the Bruker prepreprocessing code in NAPECA preprocessing repository (https://github.com/zhounapeuw/NAPE_imaging_analysis/blob/master/napeca/prepreprocess/bruker_data_process.ipynb)
+4) Run any of the main modules (with the fnames pointing to the NAPECA output; eg. VJ_OFCVTA_7_260_D6_neuropil_corrected_signals_15_50_beta_0.8.npy, and framenumberforevents_VJ_OFCVTA_7_260_D6_trained.pkl. Data from NAPECA are immediately compatible with the main postprocessing modules.
+#### Ran Suite2p for preprocessing:
+1) Run s2p_conversion.ipynb to convert s2p output signals into either a csv or npy
+2) If you want to plot ROI contours and associated whole-session activity, run s2p_plot_rois_and_activity.ipynb
+3) The user should create an event CSV that contains trial event types and their timing (see example below)
+4) Run any of the main modules
+
 # How should you format your activity/signal data:
 
 1) If you are using Inscopix: reference the csv containing ROI signals 
@@ -30,7 +42,7 @@
 
 <img width="400" alt="whole_session_plot" src="https://github.com/zhounapeuw/NAPE_imaging_postprocess/blob/main/docs/_images/napeca_post_signal_csv_format.png">
 
-# How should you format your behavioral data:
+# How should you format your behavioral data (if not using Bruker prepreprocess script for behavioral event extraction):
 
 1) The code is looking primarily for a dictionary where keys are the trial conditon names and the values are lists containing the event occurrences in samples/frames
 2) The most straightforward, general approach is to create a CSV file containing event data in the tidy format illustrated in the picture below
