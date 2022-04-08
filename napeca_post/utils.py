@@ -1,9 +1,11 @@
-import h5py
-import numpy as np
-import matplotlib.pyplot as plt
 import os
 import json
 import pickle
+import h5py
+import numpy as np
+import glob
+import matplotlib.pyplot as plt
+import pandas as pd
 from sklearn.preprocessing import StandardScaler
 import seaborn as sns
 from matplotlib.colors import ListedColormap
@@ -33,6 +35,7 @@ def check_exist_dir(path):
         os.mkdir(path)
     return path
 
+##### LOADING FUNCTIONS
 
 def load_h5(fpath):
     data_h5file = h5py.File(fpath, 'r')
@@ -43,6 +46,26 @@ def load_h5(fpath):
      reorganize the data dimension order"""
     return data_snip.transpose(1, 2, 0)
 
+
+def load_signals(fpath):
+    ### load and prepare time-series data
+    glob_signal_files = glob.glob(fpath)
+    _, fext = os.path.splitext(glob_signal_files[0])
+    if len(glob_signal_files) == 0:
+        print('Warning: No or signal files detected; please check your fname and fdir')
+    if 'npy' in fext:
+        signals = np.squeeze(np.load(glob_signal_files[0]))
+    elif 'csv' in fext:
+        df_signals = pd.read_csv(glob_signal_files[0], header=None)
+        if 'Time(s)/Cell Status' in df_signals.values:
+            # for inscopix data, drop first two rows and first column, and transpose
+            signals = np.transpose(df_signals.drop([0,1], axis=0).iloc[:, 1:].values.astype(np.float32))
+        else:
+            signals = df_signals.values
+
+    return signals
+
+##### PLOTTING FUNCTIONS
 
 def plot_single_img(to_plot, frame_num):
     plt.figure(figsize=(7, 7))
@@ -110,6 +133,9 @@ def subplot_heatmap(axs, title, image, cmap=diverge_cmap, clims=None, zoom_windo
 
 def dict_key_len(dict_, key):
     return len(dict_[key])
+
+
+###### DATA PROCESSING FUNCTIONS
 
 
 def make_tile(start, end, num_rep):
@@ -278,13 +304,11 @@ def extract_trial_data(data, tvec, start_end_samp, frame_events, conditions, bas
 
                 if baseline_start_end_samp is not None:
                     # this can take a while to compute
-                    data_dict[condition]['ztrial_avg_data'] = np.squeeze(np.apply_along_axis(zscore_, -1,
-                                                                                              data_dict[condition]['trial_avg_data'],
-                                                                                              baseline_svec))
+                    data_dict[condition]['trial_avg_zdata'] = np.squeeze(np.nanmean(data_dict[condition]['zdata'], axis=0))
             else:
+                # if there's only one trial, just zscore the raw data
                 if baseline_start_end_samp is not None:
-                    # this can take a while to compute
-                    data_dict[condition]['ztrial_avg_data'] = np.squeeze(np.apply_along_axis(zscore_, -1,
+                    data_dict[condition]['trial_avg_zdata'] = np.squeeze(np.apply_along_axis(zscore_, -1,
                                                                                               data_dict[condition]['data'],
                                                                                               baseline_svec))
 
@@ -330,3 +354,24 @@ def time_to_samples(trial_tvec, analysis_window):
 
     return analysis_svec
 
+
+def calc_dff(activity_vec):
+    """
+    Needs to be used with: np.apply_along_axis(calc_dff, 1, roi_signal_sima)
+    Alternatively one can apply np.vstack(np.mean(data, axis=1)) onto whole array without needing to apply to each row
+    """
+    mean_act = np.nanmean(activity_vec)
+    return (activity_vec-mean_act)/mean_act
+
+
+def df_to_dict(fpath):
+    """
+    Turns a csv containing events names (column 0) and frame samples (column 1) into a dictionary where keys are event names
+    and values are lists containing each event's frame samples
+    """
+
+    event_frames_dict = {}
+    event_frames_df = pd.read_csv(fpath)
+    for condition in event_frames_df['event'].unique():
+        event_frames_dict[condition] = list(event_frames_df[event_frames_df['event'] == condition]['sample'])
+    return event_frames_dict
