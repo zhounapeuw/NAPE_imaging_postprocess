@@ -364,6 +364,15 @@ def calc_dff(activity_vec):
     return (activity_vec-mean_act)/mean_act
 
 
+def dict_samples_to_time(dict_in, fs):
+    """
+    For a dictionary containing lists of times, converts all list entries to frames/samples
+    """
+    for cond in dict_in:
+        dict_in[cond] = [int(entry*fs) for entry in dict_in[cond]]
+    return dict_in
+
+
 def df_to_dict(fpath):
     """
     Turns a csv containing events names (column 0) and frame samples (column 1) into a dictionary where keys are event names
@@ -373,5 +382,5 @@ def df_to_dict(fpath):
     event_frames_dict = {}
     event_frames_df = pd.read_csv(fpath)
     for condition in event_frames_df['event'].unique():
-        event_frames_dict[condition] = list(event_frames_df[event_frames_df['event'] == condition]['sample'])
+        event_frames_dict[condition] = list(event_frames_df[event_frames_df['event'] == condition]['time'])
     return event_frames_dict
