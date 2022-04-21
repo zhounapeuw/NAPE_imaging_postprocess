@@ -1,3 +1,4 @@
+from ast import AsyncFunctionDef
 import os
 import numpy as np
 import h5py
@@ -9,14 +10,27 @@ import matplotlib.pyplot as plt
 #plt.rcParams['text.usetex'] = False
 #plt.rcParams['text.latex.unicode'] = False
 
+# Creates a dictionary, path_dict, with all of the required path information for the following
+# functions including save directory and finding the s2p-output
+# Parameters:
+#            fdir - the path to the original recording file
+#            threshold_scaling_values - the corresponding threshold_scaling value used
+#                                       by the automatic script  
+#            tseries_start_end - the time-scale of the roi activity trace that will be outputted
+#            rois_to_plot - the number of ROI's whose mask will be outlined
+#            output_fig_dir - the path for the output, i.e where the figures will be saved
 def define_paths_roi_plots(fdir, threshold_scaling_values, tseries_start_end, rois_to_plot, output_fig_dir):
     
     path_dict = {}
     # define paths for loading s2p data
+    if threshold_scaling_values == 0:
+        path_dict['s2p_dir'] = os.path.join(fdir, 'suite2p', 'plane0')
+    else:
+        path_dict['s2p_dir'] = os.path.join(fdir, f'threshold_scaling_{threshold_scaling_values}', 'plane0')
+
     path_dict['threshold_scaling_values'] = threshold_scaling_values
     path_dict['tseries_start_end'] = tseries_start_end
     path_dict['rois_to_plot'] = rois_to_plot
-    path_dict['s2p_dir'] = os.path.join(fdir, f'threshold_scaling_{threshold_scaling_values}', 'plane0')
     path_dict['s2p_F_path'] = os.path.join(path_dict['s2p_dir'], 'F.npy')
     path_dict['s2p_Fneu_path'] = os.path.join(path_dict['s2p_dir'], 'Fneu.npy')
     path_dict['s2p_iscell_path'] = os.path.join(path_dict['s2p_dir'], 'iscell.npy')
@@ -30,6 +44,8 @@ def define_paths_roi_plots(fdir, threshold_scaling_values, tseries_start_end, ro
 
     return path_dict
 
+#Takes the path information from path_dict and uses it to load and save the files
+#they direct towards
 def load_s2p_data_roi_plots(path_dict):
     
     s2p_data_dict = {}
@@ -46,6 +62,7 @@ def load_s2p_data_roi_plots(path_dict):
     
     return s2p_data_dict
 
+#initializes variables for roi plots
 def plotting_rois(s2p_data_dict, path_dict):
     plot_vars = {}
     iscell_ids = np.where( s2p_data_dict['iscell'][:,0] == 1 )[0] # indices of user-curated cells referencing all ROIs detected by s2p

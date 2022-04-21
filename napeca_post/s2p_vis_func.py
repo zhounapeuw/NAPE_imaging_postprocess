@@ -3,11 +3,18 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
+#Checks to see if a given path exists and if it does not it creates
+#a folder in the given directory
 def check_exist_dir(path):
     if not os.path.exists(path):
         os.mkdir(path)
     return path
 
+#Creates visualization of the reference image used for registration
+#as well as the maximum projection, mean image, and enhanced mean image
+#Parameters:
+#           output_ops - dictionary of the s2p output data
+#           output_fig_dir - the save path for the figures created
 def reg_ref_imgs(output_ops, output_fig_dir):
     plt.subplot(1, 4, 1)
 
@@ -38,6 +45,11 @@ def reg_ref_imgs(output_ops, output_fig_dir):
     plt.savefig(registration_summary_png) 
     plt.savefig(registration_summary_pdf)
 
+#Creates a time-scale graph that shows the displacement in the x and y
+#directions at a given time that the program undertook to apply motion correction
+#Parameters:
+#           output_ops - dictionary of the s2p output data
+#           output_fig_dir - the save path for the figures created
 def reg_displacement_vis(output_ops, output_fig_dir):
     plt.figure(figsize=(18,8))
 
@@ -67,7 +79,10 @@ def reg_displacement_vis(output_ops, output_fig_dir):
     plt.savefig(registration_xy_displacement_png) 
     plt.savefig(registration_xy_displacement_pdf)
 
-def roi_mask_vis(output_ops, output_fig_dir, x):
+#Creates visualization of the roi masks that suite2p has created
+#and outputs them in the s2p_analysis folder with the names of the files
+#ending in its respective threshold scaling value
+def roi_mask_vis(output_ops, output_fig_dir, threshold_scaling_values):
     stats_file = os.path.join(output_ops['save_path'], 'stat.npy')
     iscell = np.load(os.path.join(output_ops['save_path'], 'iscell.npy'), allow_pickle=True)[:, 0].astype(int)
     stats = np.load(stats_file, allow_pickle=True)
@@ -103,13 +118,15 @@ def roi_mask_vis(output_ops, output_fig_dir, x):
 
     plt.tight_layout()
     
-    ROI_png = os.path.join(output_fig_dir, f'ROI_{x}.png'.format(x))
-    ROI_pdf = os.path.join(output_fig_dir, f'ROI_{x}.pdf'.format(x))
+    ROI_png = os.path.join(output_fig_dir, f'ROI_{threshold_scaling_values}.png')
+    ROI_pdf = os.path.join(output_fig_dir, f'ROI_{threshold_scaling_values}.pdf')
     
     plt.savefig(ROI_png) 
     plt.savefig(ROI_pdf)
 
-def roi_trace_vis(output_ops, output_fig_dir, x):
+#Creates visualization of the functional traces over time of the ROI's and 
+#proceeds to output them in the s2p_analysis folder
+def roi_trace_vis(output_ops, output_fig_dir, threshold_scaling_values):
     f_cells = np.load(os.path.join(output_ops['save_path'], 'F.npy'))
     f_neuropils = np.load(os.path.join(output_ops['save_path'], 'Fneu.npy'))
     spks = np.load(os.path.join(output_ops['save_path'], 'spks.npy'))
@@ -138,8 +155,8 @@ def roi_trace_vis(output_ops, output_fig_dir, x):
         if i == 0:
             plt.legend(bbox_to_anchor=(0.93, 2))
     
-    traces_png = os.path.join(output_fig_dir, f'traces_{x}.png')
-    traces_pdf = os.path.join(output_fig_dir, f'traces_{x}.pdf')
+    traces_png = os.path.join(output_fig_dir, f'traces_{threshold_scaling_values}.png')
+    traces_pdf = os.path.join(output_fig_dir, f'traces_{threshold_scaling_values}.pdf')
 
     plt.savefig(traces_png) 
     plt.savefig(traces_pdf)

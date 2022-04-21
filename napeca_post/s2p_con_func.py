@@ -3,12 +3,13 @@ import pickle as pkl
 import os
 import pandas as pd
 
-
-
-# could pass input as a list to make it take threshold_scaling_values sometimes
-# could make two different functions and only have one of them be called by the automatic and the other
-#called by the local
-
+# Creates a dictionary, path_dict, with all of the required path information for the following
+# functions including save directory and finding the s2p-output
+# Parameters:
+#            fdir - the path to the original recording file
+#            fname - the name of the original recording file
+#            threshold_scaling_values - the corresponding threshold_scaling value used
+#                                       by the automatic script  
 def define_paths(fdir, fname, threshold_scaling_values):
     path_dict = {}
     # define paths for loading s2p data
@@ -28,6 +29,8 @@ def define_paths(fdir, fname, threshold_scaling_values):
     
     return path_dict
 
+#Takes the path information from path_dict and uses it to load and save the files
+#they direct towards
 def load_s2p_data(path_dict):
     
     s2p_data_dict = {}
@@ -39,6 +42,7 @@ def load_s2p_data(path_dict):
     
     return s2p_data_dict
 
+#Calls the previous two and finally saves the converted files as csv and npy files
 def csv_npy_save(fdir, fname, threshold_scaling_values):
     path_dict = define_paths(fdir, fname, threshold_scaling_values)
     s2p_data_dict = load_s2p_data(path_dict)
