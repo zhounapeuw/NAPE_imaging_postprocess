@@ -1,4 +1,5 @@
 from ast import AsyncFunctionDef
+from cgitb import reset
 import os
 import numpy as np
 import h5py
@@ -40,7 +41,8 @@ def define_paths_roi_plots(fdir, threshold_scaling_values, tseries_start_end, ro
     path_dict['suite2p_dat_dir'] = os.path.join(f'threshold_scaling_{threshold_scaling_values}','plane0')
     path_dict['fig_save_dir'] = output_fig_dir
     # utils.check_exist_dir(path_dict['fig_save_dir'])
-    print("this function is working")
+    print(path_dict['threshold_scaling_values'])
+    print("from define_paths function")
 
     return path_dict
 
@@ -59,7 +61,7 @@ def load_s2p_data_roi_plots(path_dict):
     s2p_data_dict['F_npil_corr'] = s2p_data_dict['F'] - s2p_data_dict['ops']['neucoeff'] * s2p_data_dict['Fneu']
 
     s2p_data_dict['F_npil_corr_dff'] = np.apply_along_axis(utils.calc_dff, 1, s2p_data_dict['F_npil_corr'])
-    
+
     return s2p_data_dict
 
 #initializes variables for roi plots
@@ -100,7 +102,7 @@ def template_init(plot_vars, s2p_data_dict):
 
 # plot contours and cell numbers on projection image
 def contour_plot(s2p_data_dict, path_dict, plot_vars):
-    threshold_scaling_values = s2p_data_dict['threshold_scaling_values']
+    tsv = path_dict['threshold_scaling_values']
     
     to_plot = s2p_data_dict['ops']['meanImg']
 
@@ -112,12 +114,19 @@ def contour_plot(s2p_data_dict, path_dict, plot_vars):
         ax.contour(plot_vars['s2p_masks'][idx,:,:], colors=[plot_vars['colors_roi'][idx]])
         ax.text(plot_vars['roi_centroids'][idx][1]-1, plot_vars['roi_centroids'][idx][0]-1,  str(idx), fontsize=18, weight='bold', color = plot_vars['colors_roi'][idx]);
 
-    plt.savefig(os.path.join(path_dict['fig_save_dir'], f'roi_contour_map_{threshold_scaling_values}.png'))
-    plt.savefig(os.path.join(path_dict['fig_save_dir'], f'roi_contour_map_{threshold_scaling_values}.pdf'))
+    if tsv == 0:
+        save_name_png = os.path.join(path_dict['fig_save_dir'], f'roi_contour_map.png')
+        save_name_pdf = os.path.join(path_dict['fig_save_dir'], f'roi_contour_map.pdf')
+    else:
+        save_name_png = os.path.join(path_dict['fig_save_dir'], f'roi_contour_map_{tsv}.png')
+        save_name_pdf = os.path.join(path_dict['fig_save_dir'], f'roi_contour_map_{tsv}.pdf')
+
+    plt.savefig(save_name_png)
+    plt.savefig(save_name_pdf)
 
 # initialize variables for plotting time-series
 def time_series_plot(s2p_data_dict, path_dict, plot_vars):
-    threshold_scaling_values = s2p_data_dict['threshold_scaling_values']
+    tsv = path_dict['threshold_scaling_values']
 
     fs = s2p_data_dict['ops']['fs']
     num_samps = s2p_data_dict['ops']['nframes']
@@ -150,6 +159,12 @@ def time_series_plot(s2p_data_dict, path_dict, plot_vars):
 
     ax[idx].set_xlabel('Time (s)',fontsize = 20);
 
-    plt.savefig(os.path.join(path_dict['fig_save_dir'], f'roi_ts.png_{threshold_scaling_values}'))
-    plt.savefig(os.path.join(path_dict['fig_save_dir'], f'roi_ts.pdf_{threshold_scaling_values}'))
-    
+    if tsv == 0:
+        save_name_png = os.path.join(path_dict['fig_save_dir'], f'roi_ts.png')
+        save_name_pdf = os.path.join(path_dict['fig_save_dir'], f'roi_ts.pdf')
+    else:
+        save_name_png = os.path.join(path_dict['fig_save_dir'], f'roi_ts_{tsv}.png')
+        save_name_pdf = os.path.join(path_dict['fig_save_dir'], f'roi_ts_{tsv}.pdf')
+
+    plt.savefig(save_name_png)
+    plt.savefig(save_name_pdf)
