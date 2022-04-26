@@ -62,6 +62,7 @@ dependencies:
     - parso==0.8.3
     - patsy==0.5.2
     - pickleshare==0.7.5
+    - pillow==9.1.0
     - plotly==5.3.1
     - prometheus-client==0.13.1
     - prompt-toolkit==3.0.28
@@ -85,7 +86,7 @@ dependencies:
     - tenacity==8.0.1
     - terminado==0.13.3
     - testpath==0.6.0
-    - tifffile==2021.11.1
+    - tifffile==2021.11.2
     - tornado==6.1
     - traitlets==5.1.1
     - typing-extensions==4.1.1
