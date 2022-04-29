@@ -12,7 +12,7 @@
  * __whole_session_event_ticks__: Plot activity traces for each ROI across whole session (Optional - primarily for sanity check/prelim viz purposes) 
  * __plot_activity_contours__: Work-in-progress; Plots the cell ROI contours onto the projection image. ROI contours are color-coded based on the amplitude of the mean event-triggered response for each condition. Bar plots at the end illustrate condition preference.
  * __event_rel_analysis__: Primary event-related analysis script: Plots trial-, roi-, time-resolved event-triggered responses for each and across all ROIs. Also plots average responses in each dimension. 
- * __Example of spectral clustering__: Kmeans/Spectral clustering of ROIs based on event-related responses. __REQUIRES the above script to be run (event_rel_analysis)__
+ * __event_related_clustering__: Kmeans/Spectral clustering of ROIs based on event-related responses. 
 
 # Suite2p-related Modules:
 * __s2p_conversion__: Processes and converts suite2p output signals, and saves a dataframe or np array of neuropil-corrected roi activity traces as both a csv and npy file. Either output files can be used for downstream analyses (eg. event_rel_analysis, s2p_plot_rois_and_activity)
@@ -69,10 +69,10 @@
 ### Event-related responses averaged across trials and ROIs (event_rel_analysis):
 <img width="500" alt="roi_trial_avg_trace" src="https://github.com/zhounapeuw/NAPE_imaging_postprocess/blob/main/docs/_images/roi_trial_avg_trace.png">
 
-### Spectral clustering of ROIs based on event-related response profiles (Example of spectral clustering; to be renamed):
+### Spectral clustering of ROIs based on event-related response profiles (event_related_clustering):
 <img width="500" alt="cluster_heatmap" src="https://github.com/zhounapeuw/NAPE_imaging_postprocess/blob/main/docs/_images/cluster_heatmap.png">
 
-### ROI-averaged activity traces after clustering (Example of spectral clustering):
+### ROI-averaged activity traces after clustering (event_related_clustering):
 <img width="600" alt="cluster_roiAvg_traces" src="https://github.com/zhounapeuw/NAPE_imaging_postprocess/blob/main/docs/_images/cluster_roiAvg_traces.png">
 
 ## Authors
