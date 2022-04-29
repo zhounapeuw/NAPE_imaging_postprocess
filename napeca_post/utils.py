@@ -304,11 +304,11 @@ def extract_trial_data(data, tvec, start_end_samp, frame_events, conditions, bas
 
                 if baseline_start_end_samp is not None:
                     # this can take a while to compute
-                    data_dict[condition]['trial_avg_zdata'] = np.squeeze(np.nanmean(data_dict[condition]['zdata'], axis=0))
+                    data_dict[condition]['ztrial_avg_data'] = np.squeeze(np.nanmean(data_dict[condition]['zdata'], axis=0))
             else:
                 # if there's only one trial, just zscore the raw data
                 if baseline_start_end_samp is not None:
-                    data_dict[condition]['trial_avg_zdata'] = np.squeeze(np.apply_along_axis(zscore_, -1,
+                    data_dict[condition]['ztrial_avg_data'] = np.squeeze(np.apply_along_axis(zscore_, -1,
                                                                                               data_dict[condition]['data'],
                                                                                               baseline_svec))
 
