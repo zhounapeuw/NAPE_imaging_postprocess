@@ -11,25 +11,28 @@ import matplotlib.pyplot as plt
 #plt.rcParams['text.usetex'] = False
 #plt.rcParams['text.latex.unicode'] = False
 
+def s2p_dir(fdir):
+    path_dict={}
+    path_dict['s2p_dir'] = os.path.join(fdir, 'suite2p', 'plane0')
+
+    return path_dict
+
 # Creates a dictionary, path_dict, with all of the required path information for the following
 # functions including save directory and finding the s2p-output
 # Parameters:
-#            fdir - the path to the original recording file
-#            threshold_scaling_values - the corresponding threshold_scaling value used
-#                                       by the automatic script  
+#            path_dict - a dictionary with, at this point, only the path of where the data is located
 #            tseries_start_end - the time-scale of the roi activity trace that will be outputted
 #            rois_to_plot - the number of ROI's whose mask will be outlined
 #            output_fig_dir - the path for the output, i.e where the figures will be saved
-def define_paths_roi_plots(fdir, threshold_scaling_values, tseries_start_end, rois_to_plot, output_fig_dir):
-    
-    path_dict = {}
-    # define paths for loading s2p data
-    if threshold_scaling_values == 0:
-        path_dict['s2p_dir'] = os.path.join(fdir, 'suite2p', 'plane0')
-    else:
-        path_dict['s2p_dir'] = os.path.join(fdir, f'threshold_scaling_{threshold_scaling_values}', 'plane0')
+def define_paths_roi_plots(path_dict, tseries_start_end, rois_to_plot, output_fig_dir):
+ 
+    if 's2p_dir' not in path_dict:
+        threshold_scaling_values = path_dict['threshold_scaling_values']
+        fname = path_dict['fname']
+        fdir = path_dict['fdir']
+        path_dict['s2p_dir'] = os.path.join(fdir, f'{fname}_{threshold_scaling_values}', 'plane0')
 
-    path_dict['threshold_scaling_values'] = threshold_scaling_values
+    
     path_dict['tseries_start_end'] = tseries_start_end
     path_dict['rois_to_plot'] = rois_to_plot
     path_dict['s2p_F_path'] = os.path.join(path_dict['s2p_dir'], 'F.npy')
@@ -38,16 +41,15 @@ def define_paths_roi_plots(fdir, threshold_scaling_values, tseries_start_end, ro
     path_dict['s2p_ops_path'] = os.path.join(path_dict['s2p_dir'], 'ops.npy')
     path_dict['s2p_stat_path'] = os.path.join(path_dict['s2p_dir'], 'stat.npy')
     
-    path_dict['suite2p_dat_dir'] = os.path.join(f'threshold_scaling_{threshold_scaling_values}','plane0')
     path_dict['fig_save_dir'] = output_fig_dir
-    # utils.check_exist_dir(path_dict['fig_save_dir'])
-    print(path_dict['threshold_scaling_values'])
-    print("from define_paths function")
+    utils.check_exist_dir(path_dict['fig_save_dir'])
 
     return path_dict
 
-#Takes the path information from path_dict and uses it to load and save the files
-#they direct towards
+# Takes the path information from path_dict and uses it to load and save the files
+# they direct towards
+
+
 def load_s2p_data_roi_plots(path_dict):
     
     s2p_data_dict = {}
@@ -65,7 +67,7 @@ def load_s2p_data_roi_plots(path_dict):
     return s2p_data_dict
 
 #initializes variables for roi plots
-def plotting_rois(s2p_data_dict, path_dict):
+def plotting_rois(s2p_data_dict, path_dict): 
     plot_vars = {}
     iscell_ids = np.where( s2p_data_dict['iscell'][:,0] == 1 )[0] # indices of user-curated cells referencing all ROIs detected by s2p
 
@@ -102,7 +104,8 @@ def template_init(plot_vars, s2p_data_dict):
 
 # plot contours and cell numbers on projection image
 def contour_plot(s2p_data_dict, path_dict, plot_vars):
-    tsv = path_dict['threshold_scaling_values']
+    if 'threshold_scaling_values' in path_dict:
+        tsv = path_dict['threshold_scaling_values']
     
     to_plot = s2p_data_dict['ops']['meanImg']
 
@@ -112,21 +115,22 @@ def contour_plot(s2p_data_dict, path_dict, plot_vars):
 
     for idx, roi_id in enumerate(plot_vars['cell_ids']): 
         ax.contour(plot_vars['s2p_masks'][idx,:,:], colors=[plot_vars['colors_roi'][idx]])
-        ax.text(plot_vars['roi_centroids'][idx][1]-1, plot_vars['roi_centroids'][idx][0]-1,  str(idx), fontsize=18, weight='bold', color = plot_vars['colors_roi'][idx]);
+        ax.text(plot_vars['roi_centroids'][idx][1]-1, plot_vars['roi_centroids'][idx][0]-1,  str(idx), fontsize=18, weight='bold', color = plot_vars['colors_roi'][idx])
 
-    if tsv == 0:
-        save_name_png = os.path.join(path_dict['fig_save_dir'], f'roi_contour_map.png')
-        save_name_pdf = os.path.join(path_dict['fig_save_dir'], f'roi_contour_map.pdf')
-    else:
+    if 'tsv' in locals():
         save_name_png = os.path.join(path_dict['fig_save_dir'], f'roi_contour_map_{tsv}.png')
         save_name_pdf = os.path.join(path_dict['fig_save_dir'], f'roi_contour_map_{tsv}.pdf')
+    else:
+        save_name_png = os.path.join(path_dict['fig_save_dir'], 'roi_contour_map.png')
+        save_name_pdf = os.path.join(path_dict['fig_save_dir'], 'roi_contour_map.pdf')
 
     plt.savefig(save_name_png)
     plt.savefig(save_name_pdf)
 
 # initialize variables for plotting time-series
 def time_series_plot(s2p_data_dict, path_dict, plot_vars):
-    tsv = path_dict['threshold_scaling_values']
+    if 'threshold_scaling_values' in path_dict:
+        tsv = path_dict['threshold_scaling_values']
 
     fs = s2p_data_dict['ops']['fs']
     num_samps = s2p_data_dict['ops']['nframes']
@@ -142,7 +146,7 @@ def time_series_plot(s2p_data_dict, path_dict, plot_vars):
         
         to_plot = trace_data_selected[idx] 
         
-        ax[idx].plot(tvec, np.transpose( to_plot ), color = plot_vars['colors_roi'][idx] );
+        ax[idx].plot(tvec, np.transpose( to_plot ), color = plot_vars['colors_roi'][idx] )
         
         ax[idx].tick_params(axis='both', which='major', labelsize=13)
         ax[idx].tick_params(axis='both', which='minor', labelsize=13)
@@ -157,14 +161,14 @@ def time_series_plot(s2p_data_dict, path_dict, plot_vars):
     plt.setp(ax, xlim=xlims, ylim=[np.min(trace_data_selected)+np.min(trace_data_selected)*0.1, 
                                         np.max(trace_data_selected)+np.max(trace_data_selected)*0.1])  
 
-    ax[idx].set_xlabel('Time (s)',fontsize = 20);
+    ax[idx].set_xlabel('Time (s)',fontsize = 20)
 
-    if tsv == 0:
-        save_name_png = os.path.join(path_dict['fig_save_dir'], f'roi_ts.png')
-        save_name_pdf = os.path.join(path_dict['fig_save_dir'], f'roi_ts.pdf')
-    else:
+    if 'tsv' in locals():
         save_name_png = os.path.join(path_dict['fig_save_dir'], f'roi_ts_{tsv}.png')
         save_name_pdf = os.path.join(path_dict['fig_save_dir'], f'roi_ts_{tsv}.pdf')
+    else:
+        save_name_png = os.path.join(path_dict['fig_save_dir'], 'roi_ts.png')
+        save_name_pdf = os.path.join(path_dict['fig_save_dir'], 'roi_ts.pdf')
 
     plt.savefig(save_name_png)
     plt.savefig(save_name_pdf)
