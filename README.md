@@ -44,7 +44,7 @@
 
 # How should you format your behavioral data (if not using Bruker prepreprocess script for behavioral event extraction):
 
-1) The code is looking primarily for a dictionary where keys are the trial conditon names and the values are lists containing the event occurrences in samples/frames
+1) The code is looking primarily for a dictionary where keys are the trial conditon names and the values are lists containing the event occurrences in time (seconds).
 2) The most straightforward, general approach is to create a CSV file containing event data in the tidy format illustrated in the picture below
 
 <img width="300" alt="whole_session_plot" src="https://github.com/zhounapeuw/NAPE_imaging_postprocess/blob/main/docs/_images/napeca_post_event_csv_format.png">
