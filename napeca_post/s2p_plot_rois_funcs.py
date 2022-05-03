@@ -75,7 +75,7 @@ def plotting_rois(s2p_data_dict, path_dict):
     return plot_vars
 
 # initialize templates for contour map
-def template_init(plot_vars, s2p_data_dict):
+def masks_init(plot_vars, s2p_data_dict):
 
     plot_vars['colors_roi'] = plt.cm.viridis(np.linspace(0,1,plot_vars['num_rois']))
     plot_vars['s2p_masks'] = np.empty([plot_vars['num_rois'], s2p_data_dict['ops']['Ly'], s2p_data_dict['ops']['Lx']])
