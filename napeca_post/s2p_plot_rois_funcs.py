@@ -25,14 +25,7 @@ def s2p_dir(fdir):
 #            rois_to_plot - the number of ROI's whose mask will be outlined
 #            output_fig_dir - the path for the output, i.e where the figures will be saved
 def define_paths_roi_plots(path_dict, tseries_start_end, rois_to_plot, output_fig_dir):
- 
-    if 's2p_dir' not in path_dict:
-        threshold_scaling_values = path_dict['threshold_scaling_values']
-        fname = path_dict['fname']
-        fdir = path_dict['fdir']
-        path_dict['s2p_dir'] = os.path.join(fdir, f'{fname}_{threshold_scaling_values}', 'plane0')
 
-    
     path_dict['tseries_start_end'] = tseries_start_end
     path_dict['rois_to_plot'] = rois_to_plot
     path_dict['s2p_F_path'] = os.path.join(path_dict['s2p_dir'], 'F.npy')
@@ -104,8 +97,8 @@ def template_init(plot_vars, s2p_data_dict):
 
 # plot contours and cell numbers on projection image
 def contour_plot(s2p_data_dict, path_dict, plot_vars):
-    if 'threshold_scaling_values' in path_dict:
-        tsv = path_dict['threshold_scaling_values']
+    if 'threshold_scaling_value' in path_dict:
+        tsv = path_dict['threshold_scaling_value']
     
     to_plot = s2p_data_dict['ops']['meanImg']
 
@@ -129,8 +122,8 @@ def contour_plot(s2p_data_dict, path_dict, plot_vars):
 
 # initialize variables for plotting time-series
 def time_series_plot(s2p_data_dict, path_dict, plot_vars):
-    if 'threshold_scaling_values' in path_dict:
-        tsv = path_dict['threshold_scaling_values']
+    if 'threshold_scaling_value' in path_dict:
+        tsv = path_dict['threshold_scaling_value']
 
     fs = s2p_data_dict['ops']['fs']
     num_samps = s2p_data_dict['ops']['nframes']
