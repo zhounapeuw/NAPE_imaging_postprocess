@@ -1,9 +1,10 @@
 from ast import AsyncFunctionDef
 from cgitb import reset
+from inspect import trace
 import os
 import numpy as np
-import h5py
-import tifffile as tiff
+#import h5py
+#import tifffile as tiff
 
 import utils
 
@@ -35,7 +36,7 @@ def define_paths_roi_plots(path_dict, tseries_start_end, rois_to_plot, output_fi
     path_dict['s2p_stat_path'] = os.path.join(path_dict['s2p_dir'], 'stat.npy')
     
     path_dict['fig_save_dir'] = output_fig_dir
-    utils.check_exist_dir(path_dict['fig_save_dir'])
+    #utils.check_exist_dir(path_dict['fig_save_dir'])
 
     return path_dict
 
