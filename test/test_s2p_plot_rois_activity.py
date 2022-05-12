@@ -3,8 +3,6 @@ import pytest
 import numpy as np
 import pandas as pd
 from napeca_post import s2p_plot_rois_activity_funcs
-# the sys.path import is just for development, when you actually do
-# the commit do from folder import module and it will work
 
 
 # getting our fixtures set up
