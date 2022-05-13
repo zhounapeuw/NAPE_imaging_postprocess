@@ -2,7 +2,11 @@ import os
 import pytest
 import numpy as np
 import pandas as pd
+#import sys
+#sys.path.append(r'C:\Users\Alex_dl\Documents\GitHub\NAPE_imaging_postprocess\napeca_post')
+from napeca_post import utils
 from napeca_post import s2p_plot_rois_activity_funcs
+
 
 
 # getting our fixtures set up
