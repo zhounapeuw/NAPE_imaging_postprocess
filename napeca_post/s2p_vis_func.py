@@ -160,3 +160,4 @@ def roi_trace_vis(output_ops, output_fig_dir, threshold_scaling_values):
 
     plt.savefig(traces_png) 
     plt.savefig(traces_pdf)
+    
