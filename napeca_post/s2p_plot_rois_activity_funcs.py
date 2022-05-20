@@ -1,15 +1,10 @@
 from ast import AsyncFunctionDef
 from cgitb import reset
+from inspect import trace
 import os
 import numpy as np
-import h5py
-import tifffile as tiff
-
-import utils
-
+from napeca_post import utils
 import matplotlib.pyplot as plt
-#plt.rcParams['text.usetex'] = False
-#plt.rcParams['text.latex.unicode'] = False
 
 def s2p_dir(fdir):
     path_dict={}
@@ -35,8 +30,6 @@ def define_paths_roi_plots(path_dict, tseries_start_end, rois_to_plot, output_fi
     path_dict['s2p_stat_path'] = os.path.join(path_dict['s2p_dir'], 'stat.npy')
     
     path_dict['fig_save_dir'] = output_fig_dir
-    utils.check_exist_dir(path_dict['fig_save_dir'])
-
     return path_dict
 
 # Takes the path information from path_dict and uses it to load and save the files
