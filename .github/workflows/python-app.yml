@@ -3,9 +3,8 @@
 
 name: Python application
 
-on:
-  push:
-    branches: [ dev_s2p_CI_tests ]
+# runs tests on every push and pull-requests to main
+on: push
   pull_request:
     branches: [ main ]
 
