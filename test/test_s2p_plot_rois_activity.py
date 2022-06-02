@@ -85,4 +85,4 @@ def test_trace_data_selected(trace_data_selected_init, ground_truth):
     # logical operators for comaprison (and, or, etc.) are not defined for them
     # since there are many ways of interpreting it. Thus, we must take the difference of the two arrays, 
     # and apply all() which indicates that we want all of the values to be equal to 0.
-    assert (trace_data_selected_init + ground_truth).all() == 0
+    assert (trace_data_selected_init - ground_truth).all() == 0
