@@ -17,6 +17,11 @@ def open_json(json_fpath):
         return json.load(json_file)
 
 
+def calc_dff(activity_vec, baseline_samples):
+    mean_baseline = np.nanmean(activity_vec[..., baseline_samples])
+    return (activity_vec-mean_baseline)/mean_baseline
+
+
 def zscore_(data, baseline_samples):
     scaler = StandardScaler()
 
@@ -28,6 +33,7 @@ def zscore_(data, baseline_samples):
         scaler.fit(data[..., baseline_samples].T)
         scaled_data = scaler.transform(data.T).T
     return scaled_data
+
 
 
 def check_exist_dir(path):
@@ -197,7 +203,7 @@ def remove_trials_out_of_bounds(data_end, these_frame_events, start_samp, end_sa
     return np.array(keep_events)
 
 
-def extract_trial_data(data, tvec, start_end_samp, frame_events, conditions, baseline_start_end_samp=None, save_dir=None):
+def extract_trial_data(dict_meta, data, frame_events, conditions, save_dir=None):
     """
         Takes a 3d video (across a whole session) and cuts out trials based on event times.
         Also groups trial data by condition
@@ -244,9 +250,9 @@ def extract_trial_data(data, tvec, start_end_samp, frame_events, conditions, bas
         """
 
     # create sample vector for baseline epoch if argument exists (for zscoring)
-    if baseline_start_end_samp is not None:
-        baseline_svec = (np.arange(baseline_start_end_samp[0], baseline_start_end_samp[1] + 1, 1) -
-                         baseline_start_end_samp[0]).astype('int')
+    if dict_meta['baseline_begEnd_samp'] is not None:
+        baseline_svec = (np.arange(dict_meta['baseline_begEnd_samp'][0], dict_meta['baseline_begEnd_samp'][1] + 1, 1) -
+                         dict_meta['baseline_begEnd_samp'][0]).astype('int')
 
     data_dict = {}
 
@@ -256,16 +262,16 @@ def extract_trial_data(data, tvec, start_end_samp, frame_events, conditions, bas
 
         # get rid of trials that are outside of the session bounds with respect to time
         data_end_sample = data.shape[-1]
-        cond_frame_events = remove_trials_out_of_bounds(data_end_sample, frame_events[condition], start_end_samp[0], start_end_samp[1])
+        cond_frame_events = remove_trials_out_of_bounds(data_end_sample, frame_events[condition], dict_meta['trial_begEnd_samp'][0], dict_meta['trial_begEnd_samp'][1])
 
         # convert window time bounds to samples and make a trial sample vector
         # make an array where the sample indices are repeated in the y axis for n number of trials
         num_trials_cond = len(cond_frame_events)
         if num_trials_cond == 1:
-            svec_tile = np.arange(start_end_samp[0], start_end_samp[1] + 1) # just make a 1D vector for svec
+            svec_tile = np.arange(dict_meta['trial_begEnd_samp'][0], dict_meta['trial_begEnd_samp'][1] + 1) # just make a 1D vector for svec
             num_trial_samps = len(svec_tile)
         else:
-            svec_tile = make_tile(start_end_samp[0], start_end_samp[1], num_trials_cond)
+            svec_tile = make_tile(dict_meta['trial_begEnd_samp'][0], dict_meta['trial_begEnd_samp'][1], num_trials_cond)
             num_trial_samps = svec_tile.shape[1]
 
         if num_trials_cond > 0:
@@ -291,7 +297,7 @@ def extract_trial_data(data, tvec, start_end_samp, frame_events, conditions, bas
                 data_dict[condition]['data'] = np.expand_dims(extracted_trial_dat, axis=0)
 
             # save normalized data
-            if baseline_start_end_samp is not None:
+            if dict_meta['baseline_begEnd_samp'] is not None:
                 # input data dimensions should be (trials, ROI, samples)
                 data_dict[condition]['zdata'] = np.squeeze(np.apply_along_axis(zscore_, -1,
                                                                                           data_dict[condition]['data'],
@@ -301,12 +307,12 @@ def extract_trial_data(data, tvec, start_end_samp, frame_events, conditions, bas
             if num_trials_cond > 1: # if more than one trial
                 data_dict[condition]['trial_avg_data'] = np.nanmean(data_dict[condition]['data'], axis=0)
 
-                if baseline_start_end_samp is not None:
+                if dict_meta['baseline_begEnd_samp'] is not None:
                     # this can take a while to compute
                     data_dict[condition]['ztrial_avg_data'] = np.squeeze(np.nanmean(data_dict[condition]['zdata'], axis=0))
             else:
                 # if there's only one trial, just zscore the raw data
-                if baseline_start_end_samp is not None:
+                if dict_meta['baseline_begEnd_samp'] is not None:
                     data_dict[condition]['ztrial_avg_data'] = np.squeeze(np.apply_along_axis(zscore_, -1,
                                                                                               data_dict[condition]['data'],
                                                                                               baseline_svec))
@@ -314,7 +320,7 @@ def extract_trial_data(data, tvec, start_end_samp, frame_events, conditions, bas
         # save some meta data
         data_dict[condition]['num_samples'] = num_trial_samps
         data_dict[condition]['num_trials'] = num_trials_cond
-        data_dict[condition]['tvec'] = tvec
+        data_dict[condition]['tvec'] = dict_meta['tvec']
 
         if save_dir:
             with open(os.path.join(save_dir, 'event_data_dict.pkl'), 'wb') as save_handle:
