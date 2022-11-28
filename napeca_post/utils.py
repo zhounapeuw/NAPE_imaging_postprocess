@@ -363,7 +363,7 @@ def calc_dff(activity_vec):
     return (activity_vec-mean_act)/mean_act
 
 
-def dict_samples_to_time(dict_in, fs):
+def dict_time_to_samples(dict_in, fs):
     """
     For a dictionary containing lists of times, converts all list entries to frames/samples
     """
