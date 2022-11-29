@@ -3,7 +3,7 @@ from cgitb import reset
 from inspect import trace
 import os
 import numpy as np
-from napeca_post import utils
+import utils
 import matplotlib.pyplot as plt
 
 def s2p_dir(fdir):
