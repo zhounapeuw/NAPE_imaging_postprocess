@@ -3,6 +3,7 @@ from cgitb import reset
 from inspect import trace
 import os
 import numpy as np
+import random
 import utils
 import matplotlib.pyplot as plt
 
@@ -54,6 +55,7 @@ def load_s2p_data_roi_plots(path_dict):
 
 #initializes variables for roi plots
 def plotting_rois(s2p_data_dict, path_dict): 
+    max_rois_tseries = 50
     plot_vars = {}
     iscell_ids = np.where( s2p_data_dict['iscell'][:,0] == 1 )[0] # indices of user-curated cells referencing all ROIs detected by s2p
 
@@ -63,16 +65,23 @@ def plotting_rois(s2p_data_dict, path_dict):
         path_dict['rois_to_plot'] = np.arange(len(iscell_ids))
 
     plot_vars['cell_ids'] = iscell_ids[path_dict['rois_to_plot']] # indices of detected cells across all ROIs from suite2p
-    plot_vars['num_rois'] = len(path_dict['rois_to_plot'])
-
+    plot_vars['num_total_rois'] = len(path_dict['rois_to_plot'])
+    
+    if plot_vars['num_total_rois'] > max_rois_tseries:
+        plot_vars['rois_to_tseries'] = random.sample(plot_vars['cell_ids'].tolist(), max_rois_tseries)
+        plot_vars['num_rois_to_tseries'] = len(plot_vars['rois_to_tseries'])
+    else:
+        plot_vars['rois_to_tseries'] = plot_vars['cell_ids']
+        plot_vars['num_rois_to_tseries'] = plot_vars['num_total_rois'] 
+        
     return plot_vars
 
 # initialize templates for contour map
 def masks_init(plot_vars, s2p_data_dict):
 
-    plot_vars['colors_roi'] = plt.cm.viridis(np.linspace(0,1,plot_vars['num_rois']))
-    plot_vars['s2p_masks'] = np.empty([plot_vars['num_rois'], s2p_data_dict['ops']['Ly'], s2p_data_dict['ops']['Lx']])
-    plot_vars['roi_centroids'] = np.empty([plot_vars['num_rois'], 2])
+    plot_vars['colors_roi'] = plt.cm.viridis(np.linspace(0,1,plot_vars['num_rois_to_tseries']))
+    plot_vars['s2p_masks'] = np.empty([plot_vars['num_total_rois'], s2p_data_dict['ops']['Ly'], s2p_data_dict['ops']['Lx']])
+    plot_vars['roi_centroids'] = np.empty([plot_vars['num_total_rois'], 2])
 
     # loop through ROIs and add their spatial footprints to template
     for idx, roi_id in enumerate(plot_vars['cell_ids']):
@@ -83,7 +92,7 @@ def masks_init(plot_vars, s2p_data_dict):
 
         plot_vars['roi_centroids'][idx,...] = [np.min(s2p_data_dict['stat'][roi_id]['ypix']), np.min(s2p_data_dict['stat'][roi_id]['xpix'])]
 
-        if idx == plot_vars['num_rois']-1:
+        if idx == plot_vars['num_total_rois']-1:
             break
 
     return plot_vars
@@ -98,11 +107,17 @@ def contour_plot(s2p_data_dict, path_dict, plot_vars, show_labels=True, cmap_sca
     fig, ax = plt.subplots(1, 1, figsize = (10,10))
     ax.imshow(to_plot, cmap = 'gray', vmin=np.min(to_plot)*(1.0/cmap_scale_ratio), vmax=np.max(to_plot)*(1.0/cmap_scale_ratio))
     ax.axis('off')
-
+    
+    idx_color_rois = 0
     for idx, roi_id in enumerate(plot_vars['cell_ids']): 
-        ax.contour(plot_vars['s2p_masks'][idx,:,:], colors=[plot_vars['colors_roi'][idx]])
+        if roi_id in plot_vars['rois_to_tseries']:
+            this_roi_color = plot_vars['colors_roi'][idx_color_rois]
+            idx_color_rois += 1
+        else:
+            this_roi_color = 'grey'
+        ax.contour(plot_vars['s2p_masks'][idx,:,:], colors=[this_roi_color])
         if show_labels:
-            ax.text(plot_vars['roi_centroids'][idx][1]-1, plot_vars['roi_centroids'][idx][0]-1,  str(idx), fontsize=18, weight='bold', color = plot_vars['colors_roi'][idx])
+            ax.text(plot_vars['roi_centroids'][idx][1]-1, plot_vars['roi_centroids'][idx][0]-1,  str(idx), fontsize=18, weight='bold', color = this_roi_color)
 
     if 'tsv' in locals():
         save_name_png = os.path.join(path_dict['fig_save_dir'], f'roi_contour_map_{tsv}.png')
@@ -116,7 +131,6 @@ def contour_plot(s2p_data_dict, path_dict, plot_vars, show_labels=True, cmap_sca
 
 # initialize variables for plotting time-series
 def time_series_plot(s2p_data_dict, path_dict, plot_vars):
-    max_rois = 100
     
     if 'threshold_scaling_value' in path_dict:
         tsv = path_dict['threshold_scaling_value']
@@ -128,7 +142,7 @@ def time_series_plot(s2p_data_dict, path_dict, plot_vars):
         
     # F_npil_corr_dff contains all s2p-detected cells; cell_ids references those indices
     trace_data_selected = s2p_data_dict['F_npil_corr_dff'][plot_vars['cell_ids']]
-
+    
     # cut data and tvec to start/end if user defined
     if path_dict['tseries_start_end']:
         sample_start = utils.get_tvec_sample(tvec, path_dict['tseries_start_end'][0])
