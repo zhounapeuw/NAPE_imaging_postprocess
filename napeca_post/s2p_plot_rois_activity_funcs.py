@@ -54,21 +54,18 @@ def load_s2p_data_roi_plots(path_dict):
     return s2p_data_dict
 
 #initializes variables for roi plots
-def plotting_rois(s2p_data_dict, path_dict): 
-    max_rois_tseries = 50
+def prep_plotting_rois(s2p_data_dict, path_dict): 
+    max_rois_tseries = 10
     plot_vars = {}
-    iscell_ids = np.where( s2p_data_dict['iscell'][:,0] == 1 )[0] # indices of user-curated cells referencing all ROIs detected by s2p
-
-    if isinstance(path_dict['rois_to_plot'], int): # if int is supplied, first n user-curated rois included in analysis
-        path_dict['rois_to_plot'] = np.arange(path_dict['rois_to_plot'])
-    elif path_dict['rois_to_plot'] is None: # if None is supplied, all user-curated rois included in analysis
-        path_dict['rois_to_plot'] = np.arange(len(iscell_ids))
-
-    plot_vars['cell_ids'] = iscell_ids[path_dict['rois_to_plot']] # indices of detected cells across all ROIs from suite2p
-    plot_vars['num_total_rois'] = len(path_dict['rois_to_plot'])
+    plot_vars['cell_ids'] = np.where( s2p_data_dict['iscell'][:,0] == 1 )[0] # indices of user-curated cells referencing all ROIs detected by s2p
+    plot_vars['num_total_rois'] = len(plot_vars['cell_ids'])
     
-    if plot_vars['num_total_rois'] > max_rois_tseries:
-        plot_vars['rois_to_tseries'] = random.sample(plot_vars['cell_ids'].tolist(), max_rois_tseries)
+    # determine if only a subset of cells tseries are to be plotted
+    if isinstance(path_dict['rois_to_plot'], list): # if user supplied ROIs
+        plot_vars['rois_to_tseries'] = path_dict['rois_to_plot']
+        plot_vars['num_rois_to_tseries'] = len(plot_vars['rois_to_tseries'])
+    elif plot_vars['num_total_rois'] > max_rois_tseries: # if too many cells to visualize tseries, randomly sample from cells
+        plot_vars['rois_to_tseries'] = sorted(random.sample(plot_vars['cell_ids'].tolist(), max_rois_tseries))
         plot_vars['num_rois_to_tseries'] = len(plot_vars['rois_to_tseries'])
     else:
         plot_vars['rois_to_tseries'] = plot_vars['cell_ids']
@@ -98,7 +95,7 @@ def masks_init(plot_vars, s2p_data_dict):
     return plot_vars
 
 # plot contours and cell numbers on projection image
-def contour_plot(s2p_data_dict, path_dict, plot_vars, show_labels=True, cmap_scale_ratio=1):
+def contour_plot(s2p_data_dict, path_dict, plot_vars, show_labels_=True, cmap_scale_ratio=1):
     if 'threshold_scaling_value' in path_dict:
         tsv = path_dict['threshold_scaling_value']
     
@@ -116,8 +113,8 @@ def contour_plot(s2p_data_dict, path_dict, plot_vars, show_labels=True, cmap_sca
         else:
             this_roi_color = 'grey'
         ax.contour(plot_vars['s2p_masks'][idx,:,:], colors=[this_roi_color])
-        if show_labels:
-            ax.text(plot_vars['roi_centroids'][idx][1]-1, plot_vars['roi_centroids'][idx][0]-1,  str(idx), fontsize=18, weight='bold', color = this_roi_color)
+        if show_labels_ and roi_id in plot_vars['rois_to_tseries']:
+            ax.text(plot_vars['roi_centroids'][idx][1]-1, plot_vars['roi_centroids'][idx][0]-1,  str(roi_id), fontsize=18, weight='bold', color = this_roi_color)
 
     if 'tsv' in locals():
         save_name_png = os.path.join(path_dict['fig_save_dir'], f'roi_contour_map_{tsv}.png')
@@ -140,8 +137,8 @@ def time_series_plot(s2p_data_dict, path_dict, plot_vars):
     total_time = num_samps/fs 
     tvec = np.linspace(0,total_time,num_samps)
         
-    # F_npil_corr_dff contains all s2p-detected cells; cell_ids references those indices
-    trace_data_selected = s2p_data_dict['F_npil_corr_dff'][plot_vars['cell_ids']]
+    # F_npil_corr_dff contains all s2p-detected cells
+    trace_data_selected = s2p_data_dict['F_npil_corr_dff'][plot_vars['rois_to_tseries']]
     
     # cut data and tvec to start/end if user defined
     if path_dict['tseries_start_end']:
@@ -150,21 +147,22 @@ def time_series_plot(s2p_data_dict, path_dict, plot_vars):
         tvec = tvec[sample_start:sample_end]
         trace_data_selected = trace_data_selected[:,sample_start:sample_end]
     
-    fig, ax = plt.subplots(num_rois_to_plot, 1, figsize = (9,2*num_rois_to_plot))
-    for idx in range(num_rois_to_plot):
+    fig, ax = plt.subplots(plot_vars['num_rois_to_tseries'], 1, figsize = (9,2*plot_vars['num_rois_to_tseries']))
+    for idx in range(plot_vars['num_rois_to_tseries']):
         
         to_plot = trace_data_selected[idx] 
         
         ax[idx].plot(tvec, np.transpose( to_plot ), color = plot_vars['colors_roi'][idx] )
         
+        ax[idx].set_title(f"ROI {plot_vars['rois_to_tseries'][idx]}")
         ax[idx].tick_params(axis='both', which='major', labelsize=13)
         ax[idx].tick_params(axis='both', which='minor', labelsize=13)
-        if idx == np.ceil(plot_vars['num_rois']/2-1):
+        if idx == np.ceil(plot_vars['num_rois_to_tseries']/2-1):
             ax[idx].set_ylabel('Fluorescence Level',fontsize = 20)
             
 
-    plt.setp(ax, xlim=None, ylim=[np.min(trace_data_selected)*0.1, 
-                                        np.max(trace_data_selected)*0.1])  
+    plt.setp(ax, xlim=None, ylim=[np.min(trace_data_selected)*1.1, 
+                                        np.max(trace_data_selected)*1.1])  
 
     ax[idx].set_xlabel('Time (s)',fontsize = 20)
 
