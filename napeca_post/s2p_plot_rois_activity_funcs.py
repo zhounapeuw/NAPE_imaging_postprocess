@@ -54,11 +54,12 @@ def load_s2p_data_roi_plots(path_dict):
     return s2p_data_dict
 
 #initializes variables for roi plots
-def prep_plotting_rois(s2p_data_dict, path_dict): 
+def prep_plotting_rois(s2p_data_dict, path_dict, color_all_rois): 
     max_rois_tseries = 10
     plot_vars = {}
     plot_vars['cell_ids'] = np.where( s2p_data_dict['iscell'][:,0] == 1 )[0] # indices of user-curated cells referencing all ROIs detected by s2p
     plot_vars['num_total_rois'] = len(plot_vars['cell_ids'])
+    plot_vars['color_all_rois'] = color_all_rois
     
     # determine if only a subset of cells tseries are to be plotted
     if isinstance(path_dict['rois_to_plot'], list): # if user supplied ROIs
@@ -75,8 +76,12 @@ def prep_plotting_rois(s2p_data_dict, path_dict):
 
 # initialize templates for contour map
 def masks_init(plot_vars, s2p_data_dict):
-
-    plot_vars['colors_roi'] = plt.cm.viridis(np.linspace(0,1,plot_vars['num_rois_to_tseries']))
+    
+    if plot_vars['color_all_rois']:
+        num_rois_to_color = plot_vars['num_total_rois']
+    else:    
+        num_rois_to_color = plot_vars['num_rois_to_tseries']
+    plot_vars['colors_roi'] = plt.cm.viridis(np.linspace(0,1,num_rois_to_color))
     plot_vars['s2p_masks'] = np.empty([plot_vars['num_total_rois'], s2p_data_dict['ops']['Ly'], s2p_data_dict['ops']['Lx']])
     plot_vars['roi_centroids'] = np.empty([plot_vars['num_total_rois'], 2])
 
@@ -107,12 +112,12 @@ def contour_plot(s2p_data_dict, path_dict, plot_vars, show_labels_=True, cmap_sc
     
     idx_color_rois = 0
     for idx, roi_id in enumerate(plot_vars['cell_ids']): 
-        if roi_id in plot_vars['rois_to_tseries']:
+        if roi_id in plot_vars['rois_to_tseries'] or plot_vars['color_all_rois']:
             this_roi_color = plot_vars['colors_roi'][idx_color_rois]
             idx_color_rois += 1
         else:
             this_roi_color = 'grey'
-        ax.contour(plot_vars['s2p_masks'][idx,:,:], colors=[this_roi_color])
+        ax.contour(plot_vars['s2p_masks'][idx,:,:], colors=[this_roi_color], linewidths=0.5)
         if show_labels_ and roi_id in plot_vars['rois_to_tseries']:
             ax.text(plot_vars['roi_centroids'][idx][1]-1, plot_vars['roi_centroids'][idx][0]-1,  str(roi_id), fontsize=18, weight='bold', color = this_roi_color)
 
