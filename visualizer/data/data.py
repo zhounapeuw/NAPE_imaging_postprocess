@@ -1,17 +1,8 @@
-import os
 import numpy as np
 import glob
 import pickle
-import json
-import seaborn as sns
-import matplotlib.ticker as ticker
-import pandas as pd
-from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
-import matplotlib
-import plotly.express as px
-import plotly.graph_objects as go
-import visualizer.misc as utils
+from visualizer import misc
 import random
 
 class EventTicksProcessor:
@@ -50,7 +41,7 @@ class EventTicksProcessor:
 
     def load_data(self, signals_content, estimmed_frames=None):
         # Load time-series data
-        signals = utils.load_signals(signals_content)
+        signals = misc.load_signals(signals_content)
         if self.fparams['opto_blank_frame']:
             try:
                 glob_stim_files = glob.glob(estimmed_frames)
@@ -63,7 +54,7 @@ class EventTicksProcessor:
                 print('Note: No stim preprocessed meta data detected.')
 
         if self.fparams['flag_normalization'] == 'dff':
-            signal_to_plot = np.apply_along_axis(utils.calc_dff, 1, signals)
+            signal_to_plot = np.apply_along_axis(misc.calc_dff, 1, signals)
         elif self.fparams['flag_normalization'] == 'dff_perc':
             signal_to_plot = np.apply_along_axis(self.calc_dff_percentile, 1, signals)
         elif self.fparams['flag_normalization'] == 'zscore':
@@ -90,10 +81,10 @@ class EventTicksProcessor:
             if not glob_event_files:
                 print(f'{self.fparams["fname_events"]} not detected. Please check if the path is correct.')
             if 'csv' in glob_event_files[0]:
-                event_times = utils.df_to_dict(glob_event_files[0])
+                event_times = misc.df_to_dict(glob_event_files[0])
             elif 'pkl' in glob_event_files[0]:
                 event_times = pickle.load(open(glob_event_files[0], "rb"), fix_imports=True, encoding='latin1')
-            event_frames = utils.dict_time_to_samples(event_times, self.fparams['fs'])
+            event_frames = misc.dict_time_to_samples(event_times, self.fparams['fs'])
 
             self.event_times = {}
             if self.fparams['selected_conditions']:
@@ -138,7 +129,7 @@ class S2PActivityProcessor:
         self.s2p_data_dict['stat'] = np.load(self.path_dict['s2p_stat_path'], allow_pickle=True)
 
         self.s2p_data_dict['F_npil_corr'] = self.s2p_data_dict['F'] - self.s2p_data_dict['ops']['neucoeff'] * self.s2p_data_dict['Fneu']
-        self.s2p_data_dict['F_npil_corr_dff'] = np.apply_along_axis(utils.calc_dff, 1, self.s2p_data_dict['F_npil_corr'])
+        self.s2p_data_dict['F_npil_corr_dff'] = np.apply_along_axis(misc.calc_dff, 1, self.s2p_data_dict['F_npil_corr'])
 
     def prep_plotting_rois(self):
         self.plot_vars['cell_ids'] = np.where(self.s2p_data_dict['iscell'][:, 0] == 1)[0]
@@ -195,8 +186,8 @@ class S2PActivityProcessor:
 
         # Cut data and tvec to start/end if user defined
         if self.path_dict['tseries_start_end']:
-            sample_start = utils.get_tvec_sample(tvec, self.path_dict['tseries_start_end'][0])
-            sample_end = utils.get_tvec_sample(tvec, self.path_dict['tseries_start_end'][1])
+            sample_start = misc.get_tvec_sample(tvec, self.path_dict['tseries_start_end'][0])
+            sample_end = misc.get_tvec_sample(tvec, self.path_dict['tseries_start_end'][1])
             tvec = tvec[sample_start:sample_end]
             trace_data_selected = trace_data_selected[:, sample_start:sample_end]
         

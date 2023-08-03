@@ -1,1 +1,1 @@
-from .data import EventTicksProcessor, S2PActivityProcessor
+from data import EventTicksProcessor, S2PActivityProcessor

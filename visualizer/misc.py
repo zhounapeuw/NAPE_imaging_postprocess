@@ -11,7 +11,6 @@ import seaborn as sns
 from matplotlib.colors import ListedColormap
 import warnings
 
-
 def open_json(json_fpath):
     with open(json_fpath) as json_file:
         return json.load(json_file)

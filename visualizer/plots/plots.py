@@ -1,17 +1,8 @@
-import os
 import numpy as np
-import glob
-import pickle
-import json
-import seaborn as sns
-import matplotlib.ticker as ticker
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
-import matplotlib
 import plotly.express as px
 import plotly.graph_objects as go
-import visualizer.misc as utils
 
 class EventTicksPlot:
     def __init__(self, data_processor):
