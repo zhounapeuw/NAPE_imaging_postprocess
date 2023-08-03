@@ -99,18 +99,16 @@ class EventTicksProcessor:
         self.load_behav_data(fname_events_content)
 
 class S2PActivityProcessor:
-    def __init__(self, fdir, tseries_start_end, show_labels, color_all_rois, rois_to_plot, output_fig_dir):
-        self.fdir = fdir
+    def __init__(self, tseries_start_end, show_labels, color_all_rois, rois_to_plot):
         self.tseries_start_end = tseries_start_end
         self.show_labels = show_labels
         self.color_all_rois = color_all_rois
         self.rois_to_plot = rois_to_plot
-        self.output_fig_dir = output_fig_dir
         self.path_dict = {}
         self.s2p_data_dict = {}
         self.plot_vars = {}
 
-    def define_paths_roi_plots(self, f_contents, fneu_contents, iscell_contents, ops_contents, stat_contents):
+    def define_paths_roi_plots(self, f_contents, fneu_contents, iscell_contents, ops_contents, stat_contents, spks_contents=None):
         self.path_dict['tseries_start_end'] = self.tseries_start_end
         self.path_dict['rois_to_plot'] = self.rois_to_plot
         self.path_dict['s2p_F_path'] = f_contents
@@ -118,6 +116,7 @@ class S2PActivityProcessor:
         self.path_dict['s2p_iscell_path'] = iscell_contents
         self.path_dict['s2p_ops_path'] = ops_contents
         self.path_dict['s2p_stat_path'] = stat_contents
+        self.path_dict['s2p_spks_path'] = spks_contents
 
         return self.path_dict
 
