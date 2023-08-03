@@ -36,7 +36,7 @@ Topic :: Scientific/Engineering
 setup(
     name="visualizer",
     version="1.0.0",
-    packages=['visualizer'],
+    packages=['visualizer', 'visualizer.data', 'visualizer.plots'],
     #   scripts = [''],
     #
     # Project uses reStructuredText, so ensure that the docutils get
