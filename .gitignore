@@ -8,3 +8,4 @@ __pycache__/
 
 *.pyc 
 examples/sample_data/
+napeca_post/sample_data/
