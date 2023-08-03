@@ -38,7 +38,7 @@ setup(
     version="1.0.0",
     packages=['visualizer',
               'visualizer.data',
-              'visualizer.plots',
+              'visualizer.visuals',
               ],
     #   scripts = [''],
     #
