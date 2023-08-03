@@ -34,11 +34,11 @@ Topic :: Scientific/Engineering
 
 """
 setup(
-    name="visualizing_package",
+    name="visualizer",
     version="1.0.0",
-    packages=['visualizing_package',
-              'visualizing_package.data',
-              'visualizing_package.plots',
+    packages=['visualizer',
+              'visualizer.data',
+              'visualizer.plots',
               ],
     #   scripts = [''],
     #
