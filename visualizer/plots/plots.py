@@ -19,7 +19,7 @@ class EventTicksPlot:
                     x=self.data_processor.tvec,
                     y=self.data_processor.signal_to_plot[idx_roi, :]))
 
-        if self.data_processor.fparams['fname_events']:
+        if self.data_processor.fname_events_content:
             for idx_cond, cond in enumerate(self.data_processor.conditions):
                 for idx_ev, event in enumerate(self.data_processor.event_times[cond]):
                     if idx_ev == 0:
@@ -179,7 +179,7 @@ class S2PActivityPlot:
 
             return plt
         else:
-            tvec, trace_data_selected = self.generate_tsv_and_trace()
+            tvec, trace_data_selected = self.data_processor.generate_tsv_and_trace()
 
             # Create a DataFrame for the trace data
             df_trace_data = pd.DataFrame(trace_data_selected.T, columns=[f"ROI {roi}" for roi in self.data_processor.plot_vars['rois_to_tseries']])

@@ -47,20 +47,12 @@ def load_h5(fpath):
 
 
 def load_signals(fpath):
-    ### load and prepare time-series data
-    glob_signal_files = glob.glob(fpath)
-    _, fext = os.path.splitext(glob_signal_files[0])
-    if len(glob_signal_files) == 0:
-        print('Warning: No or signal files detected; please check your fname and fdir')
-    if 'npy' in fext:
-        signals = np.squeeze(np.load(glob_signal_files[0]))
-    elif 'csv' in fext:
-        df_signals = pd.read_csv(glob_signal_files[0], header=None)
-        if 'Time(s)/Cell Status' in df_signals.values:
-            # for inscopix data, drop first two rows and first column, and transpose
-            signals = np.transpose(df_signals.drop([0,1], axis=0).iloc[:, 1:].values.astype(np.float32))
-        else:
-            signals = df_signals.values
+    df_signals = pd.read_csv(fpath, header=None)
+    if 'Time(s)/Cell Status' in df_signals.values:
+        # for inscopix data, drop first two rows and first column, and transpose
+        signals = np.transpose(df_signals.drop([0,1], axis=0).iloc[:, 1:].values.astype(np.float32))
+    else:
+        signals = df_signals.values
 
     return signals
 

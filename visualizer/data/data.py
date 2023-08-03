@@ -75,22 +75,17 @@ class EventTicksProcessor:
 
     def load_behav_data(self, fname_events_content):
         if fname_events_content:
-            glob_event_files = glob.glob(fname_events_content)
-            if not glob_event_files:
-                print(f'{self.fparams["fname_events"]} not detected. Please check if the path is correct.')
-            if 'csv' in glob_event_files[0]:
-                event_times = misc.df_to_dict(glob_event_files[0])
-            elif 'pkl' in glob_event_files[0]:
-                event_times = pickle.load(open(glob_event_files[0], "rb"), fix_imports=True, encoding='latin1')
-            event_frames = misc.dict_time_to_samples(event_times, self.fparams['fs'])
+            self.event_times = misc.df_to_dict(fname_events_content)
+            event_frames = misc.dict_time_to_samples(self.event_times, self.fparams['fs'])
 
             self.event_times = {}
             if self.fparams['selected_conditions']:
-                self.conditions = self.fparams['selected_conditions']
+                self.conditions = self.fparams['selected_conditions'] 
             else:
                 self.conditions = event_frames.keys()
-            for cond in self.conditions:
-                self.event_times[cond] = (np.array(event_frames[cond]) / self.fparams['fs']).astype('int')
+            for cond in self.conditions: # convert event samples to time in seconds
+                self.event_times[cond] = (np.array(event_frames[cond])/self.fparams['fs']).astype('int')
+        self.fname_events_content = fname_events_content
     
     def load_all_data(self, signals_content, fname_events_content, estimmed_frames=None):
         self.load_data(signals_content, estimmed_frames)
