@@ -1,1 +1,1 @@
-from plots import EventTicksPlot, S2PActivityPlot
+from .plots import EventTicksPlot, S2PActivityPlot
