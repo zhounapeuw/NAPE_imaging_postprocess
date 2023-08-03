@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 import plotly.express as px
 import plotly.graph_objects as go
-import util_funcs as utils
+import visualizer.misc as utils
 import random
 
 class EventTicksProcessor:
