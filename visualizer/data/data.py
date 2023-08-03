@@ -6,7 +6,7 @@ from visualizer import misc
 import random
 
 class EventTicksProcessor:
-    def __init__(self, fname_signal, fname_events, fs, opto_blank_frame, num_rois, selected_conditions, flag_normalization, cond_colors=['steelblue', 'crimson', 'orchid', 'gold']):
+    def __init__(self, fs, opto_blank_frame, num_rois, selected_conditions, flag_normalization, cond_colors=['steelblue', 'crimson', 'orchid', 'gold']):
         self.signal_to_plot = None
         self.min_max = None
         self.min_max_all = None
@@ -14,14 +14,12 @@ class EventTicksProcessor:
         self.event_times = None
         self.conditions = None
         self.cond_colors = cond_colors
-        self.fparams = self.define_params(fname_signal, fname_events, fs, opto_blank_frame, num_rois, selected_conditions, flag_normalization)
+        self.fparams = self.define_params(fs, opto_blank_frame, num_rois, selected_conditions, flag_normalization)
 
-    def define_params(self, fname_signal, fname_events, fs, opto_blank_frame, num_rois, selected_conditions, flag_normalization):
+    def define_params(self, fs, opto_blank_frame, num_rois, selected_conditions, flag_normalization):
         # User-defined variables
         fparams = {}
         
-        fparams['fname_signal'] = fname_signal
-        fparams['fname_events'] = fname_events
         fparams['fs'] = fs
         fparams['opto_blank_frame'] = opto_blank_frame
         fparams['num_rois'] = num_rois
@@ -76,7 +74,7 @@ class EventTicksProcessor:
         self.tvec = tvec
 
     def load_behav_data(self, fname_events_content):
-        if self.fparams['fname_events']:
+        if fname_events_content:
             glob_event_files = glob.glob(fname_events_content)
             if not glob_event_files:
                 print(f'{self.fparams["fname_events"]} not detected. Please check if the path is correct.')
