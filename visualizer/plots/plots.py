@@ -237,3 +237,143 @@ class S2PActivityPlot:
             )
 
             return fig
+
+class EventAnalysisPlot:
+    def __init__(self, data_processor):
+        """
+        Initialize the Visualization class.
+
+        Parameters:
+            data_processor (DataProcessor): An instance of the DataProcessor class.
+        """
+        self.data_processor = data_processor
+
+    def plot_raw_trace(self, roi_idx):
+        """
+        Plot the raw trace for a specific ROI.
+
+        Parameters:
+            roi_idx (int): The index of the ROI.
+
+        Returns:
+            matplotlib.pyplot.figure: The figure object containing the trace plot.
+        """
+        fig, ax = plt.subplots()
+        for condition in self.data_processor.conditions:
+            ax.plot(self.data_processor.tvec, self.data_processor.data_dict[condition]['data'][roi_idx, :], label=condition)
+        ax.set_xlabel('Time (s)')
+        ax.set_ylabel('Raw Signal')
+        ax.set_title(f'Raw Trace - ROI {roi_idx}')
+        ax.legend()
+        plt.show()
+        return fig
+
+    def plot_trial_avg_heatmap(self, data_key, sort_roi_order=None, clims=None):
+        """
+        Plot the trial-averaged heatmap for the specified data key.
+
+        Parameters:
+            data_key (str): The key of the data to plot.
+            sort_roi_order (list, optional): The custom order of ROIs for sorting the heatmap. Defaults to None.
+            clims (tuple, optional): The color limits for the heatmap. Defaults to None.
+
+        Returns:
+            matplotlib.pyplot.figure: The figure object containing the heatmap.
+        """
+        return self.data_processor.plot_trial_avg_heatmap(data_key, sort_roi_order, clims)
+
+    def plot_roi_trial_avg_trace(self, roi_idx):
+        """
+        Plot the trial-averaged trace for a specific ROI.
+
+        Parameters:
+            roi_idx (int): The index of the ROI.
+
+        Returns:
+            matplotlib.pyplot.figure: The figure object containing the trace plot.
+        """
+        return self.data_processor.plot_roi_trial_avg_trace(roi_idx)
+
+    def plot_roi_trial_time_avg_bar(self, roi_idx, sort_method='peak_time', time_window=None):
+        """
+        Plot the time-averaged bar plot for a specific ROI.
+
+        Parameters:
+            roi_idx (int): The index of the ROI.
+            sort_method (str, optional): The method used to sort the ROIs. Can be 'peak_time' or 'max_value'. Defaults to 'peak_time'.
+            time_window (tuple, optional): The time window (in seconds) for computing the average value. Defaults to None.
+
+        Returns:
+            matplotlib.pyplot.figure: The figure object containing the bar plot.
+        """
+        return self.data_processor.plot_roi_trial_time_avg_bar(roi_idx, sort_method, time_window)
+
+    def plot_multi_roi_trial_avg_trace(self, roi_indices):
+        """
+        Plot the trial-averaged trace for multiple ROIs.
+
+        Parameters:
+            roi_indices (list): A list of ROI indices.
+
+        Returns:
+            matplotlib.pyplot.figure: The figure object containing the trace plot.
+        """
+        fig, ax = plt.subplots()
+        for roi_idx in roi_indices:
+            for condition in self.data_processor.conditions:
+                trace = np.nanmean(self.data_processor.data_dict[condition]['data'][roi_idx, :], axis=0)
+                ax.plot(self.data_processor.tvec, trace, label=f'ROI {roi_idx} - {condition}')
+        ax.set_xlabel('Time (s)')
+        ax.set_ylabel('Average Signal')
+        ax.set_title('Trial Averaged Trace - Multiple ROIs')
+        ax.legend()
+        plt.show()
+        return fig
+
+    def plot_multi_roi_trial_time_avg_bar(self, roi_indices, sort_method='peak_time', time_window=None):
+        """
+        Plot the time-averaged bar plot for multiple ROIs.
+
+        Parameters:
+            roi_indices (list): A list of ROI indices.
+            sort_method (str, optional): The method used to sort the ROIs. Can be 'peak_time' or 'max_value'. Defaults to 'peak_time'.
+            time_window (tuple, optional): The time window (in seconds) for computing the average value. Defaults to None.
+
+        Returns:
+            matplotlib.pyplot.figure: The figure object containing the bar plot.
+        """
+        if time_window is None:
+            time_window = (0, self.data_processor.trial_start_end_sec[-1])
+
+        sort_epoch_start_time, sort_epoch_end_time = time_window
+        sort_epoch_start_samp = self.data_processor.find_nearest_idx(self.data_processor.tvec, sort_epoch_start_time)[0]
+        sort_epoch_end_samp = self.data_processor.find_nearest_idx(self.data_processor.tvec, sort_epoch_end_time)[0]
+
+        fig, ax = plt.subplots()
+        x_pos = np.arange(len(self.data_processor.conditions))
+
+        for roi_idx in roi_indices:
+            roi_data = self.data_processor.data_dict[self.data_processor.conditions[0]]['data'][roi_idx, sort_epoch_start_samp:sort_epoch_end_samp]
+            
+            if sort_method == 'peak_time':
+                epoch_peak_samp = np.argmax(roi_data)
+                sorted_roi_order = np.argsort(epoch_peak_samp)
+            elif sort_method == 'max_value':
+                time_max = np.nanmax(roi_data)
+                sorted_roi_order = np.argsort(time_max)[::-1]
+            else:
+                raise ValueError("Invalid sort_method. Should be either 'peak_time' or 'max_value'.")
+
+            for idx in sorted_roi_order:
+                avg_values = [np.nanmean(self.data_processor.data_dict[condition]['data'][roi_idx, sort_epoch_start_samp:sort_epoch_end_samp]) for condition in self.data_processor.conditions]
+                ax.bar(x_pos, avg_values, label=f'ROI {roi_idx}')
+                x_pos += 0.15
+
+        ax.set_xticks(np.arange(len(self.data_processor.conditions)) + 0.15 * (len(sorted_roi_order) / 2))
+        ax.set_xticklabels(self.data_processor.conditions)
+        ax.set_xlabel('Conditions')
+        ax.set_ylabel('Average Signal')
+        ax.set_title('Time Averaged Bar Plot - Multiple ROIs')
+        ax.legend()
+        plt.show()
+        return fig

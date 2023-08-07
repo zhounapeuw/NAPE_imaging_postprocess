@@ -4,6 +4,8 @@ import pickle
 import matplotlib.pyplot as plt
 from visualizer import misc
 import random
+import os 
+import pandas as pd
 
 class EventTicksProcessor:
     def __init__(self, fs, opto_blank_frame, num_rois, selected_conditions, flag_normalization, cond_colors=['steelblue', 'crimson', 'orchid', 'gold']):
@@ -184,3 +186,252 @@ class S2PActivityProcessor:
             trace_data_selected = trace_data_selected[:, sample_start:sample_end]
         
         return tvec, trace_data_selected
+    
+class EventAnalysisProcessor:
+    def __init__(self, fparams):
+        self.fparams = fparams
+        self.signals_fpath = os.path.join(fparams['fdir'], fparams['fname_signal'])
+        self.events_file_path = os.path.join(fparams['fdir'], fparams['fname_events'])
+        self.save_dir = os.path.join(fparams['fdir'], 'event_rel_analysis')
+        misc.check_exist_dir(self.save_dir)
+
+    def load_data(self):
+        signals = misc.load_signals(self.signals_fpath)
+        num_rois = signals.shape[0]
+        all_nan_rois = np.where(np.apply_along_axis(self.is_all_nans, 1, signals))
+        if self.fparams['opto_blank_frame']:
+            try:
+                glob_stim_files = glob.glob(os.path.join(self.fparams['fdir'], "{}*_stimmed_frames.pkl".format(self.fparams['fname'])))
+                stim_frames = pickle.load(open(glob_stim_files[0], "rb"))
+                signals[:, stim_frames['samples']] = None
+                flag_stim = True
+                print('Detected stim data; replaced stim samples with NaNs')
+            except:
+                flag_stim = False
+                print('Note: No stim preprocessed meta data detected.')
+        else:
+            flag_stim = False
+
+        return signals, num_rois, all_nan_rois, flag_stim
+
+    @staticmethod
+    def is_all_nans(vector):
+        if isinstance(vector, pd.Series):
+            vector = vector.values
+        return np.isnan(vector).all()
+
+    def load_event_data(self):
+        glob_event_files = glob.glob(self.events_file_path)
+        if not glob_event_files:
+            print(f'{self.events_file_path} not detected. Please check if path is correct.')
+        if 'csv' in glob_event_files[0]:
+            event_times = misc.df_to_dict(glob_event_files[0])
+        elif any(x in glob_event_files[0] for x in ['pkl', 'pickle']):
+            event_times = pickle.load(open(glob_event_files[0], "rb"), fix_imports=True, encoding='latin1')
+
+        event_frames = misc.dict_time_to_samples(event_times, self.fparams['fs'])
+        all_conditions = event_frames.keys()
+        conditions = [condition for condition in all_conditions if len(event_frames[condition]) > 0]
+        conditions.sort()
+
+        return event_frames, conditions
+
+    def extract_trial_data(self, signals, tvec, trial_begEnd_samp, event_frames, conditions, baseline_begEnd_samp):
+        data_dict = misc.extract_trial_data(signals, tvec, trial_begEnd_samp, event_frames, conditions,
+                                             baseline_start_end_samp=baseline_begEnd_samp, save_dir=self.save_dir)
+        return data_dict
+
+    @staticmethod
+    def sort_heatmap_peaks(data, tvec, sort_epoch_start_time, sort_epoch_end_time, sort_method='peak_time'):
+        sort_epoch_start_samp = misc.find_nearest_idx(tvec, sort_epoch_start_time)[0]
+        sort_epoch_end_samp = misc.find_nearest_idx(tvec, sort_epoch_end_time)[0]
+
+        if sort_method == 'peak_time':
+            epoch_peak_samp = np.argmax(data[:, sort_epoch_start_samp:sort_epoch_end_samp], axis=1)
+            final_sorting = np.argsort(epoch_peak_samp)
+        elif sort_method == 'max_value':
+            time_max = np.nanmax(data[:, sort_epoch_start_samp:sort_epoch_end_samp], axis=1)
+            final_sorting = np.argsort(time_max)[::-1]
+
+        return final_sorting
+
+    def process_data(self):
+        signals, num_rois, all_nan_rois, flag_stim = self.load_data()
+        event_frames, conditions = self.load_event_data()
+
+        if self.fparams['flag_sort_rois']:
+            if not self.fparams['roi_sort_cond']:
+                self.fparams['roi_sort_cond'] = conditions[0]
+
+            if self.fparams['roi_sort_cond'] not in event_frames.keys():
+                sorted_roi_order = range(num_rois)
+                interesting_rois = self.fparams['interesting_rois']
+                print('Specified condition to sort by doesn\'t exist! ROIs are in default sorting.')
+            else:
+                sorted_roi_order = self.sort_heatmap_peaks(self.data_dict[self.fparams['roi_sort_cond']][self.data_trial_avg_key],
+                                                           self.tvec, 0, self.trial_start_end_sec[-1],
+                                                           self.fparams['user_sort_method'])
+
+                interesting_rois = np.in1d(sorted_roi_order, self.fparams['interesting_rois']).nonzero()[0]
+        else:
+            sorted_roi_order = range(num_rois)
+            interesting_rois = self.fparams['interesting_rois']
+
+        if not all_nan_rois[0].size == 0:
+            set_diff_keep_order = lambda main_list, remove_list: [i for i in main_list if i not in remove_list]
+            sorted_roi_order = set_diff_keep_order(sorted_roi_order, all_nan_rois)
+            interesting_rois = [i for i in self.fparams['interesting_rois'] if i not in all_nan_rois]
+
+        self.data_dict = self.extract_trial_data(signals, self.tvec, self.trial_begEnd_samp, self.event_frames,
+                                                 self.conditions, self.baseline_begEnd_samp)
+        self.sorted_roi_order = sorted_roi_order
+        self.interesting_rois = interesting_rois
+        self.flag_stim = flag_stim
+
+    def plot_trial_avg_heatmap(self, data_key, sort_roi_order=None, clims=None):
+        """
+        Plot the trial-averaged heatmap for the specified data key.
+
+        Parameters:
+            data_key (str): The key of the data to plot.
+            sort_roi_order (list, optional): The custom order of ROIs for sorting the heatmap. Defaults to None.
+            clims (tuple, optional): The color limits for the heatmap. Defaults to None.
+
+        Returns:
+            matplotlib.pyplot.figure: The figure object containing the heatmap.
+        """
+        if sort_roi_order is None:
+            sort_roi_order = self.sorted_roi_order
+
+        if clims is None:
+            data_in = self.data_dict[data_key]['data']
+            clims = self.generate_clims(data_in, self.fparams['norm_type'])
+
+        sorted_data = self.data_dict[data_key]['data'][sort_roi_order, :]
+        fig, ax = plt.subplots()
+        im = ax.imshow(sorted_data, cmap='viridis', aspect='auto', clim=clims)
+        ax.set_xlabel('Time (s)')
+        ax.set_ylabel('ROI')
+        ax.set_title(f'{data_key} - Trial Averaged Heatmap')
+        plt.colorbar(im, ax=ax)
+        plt.show()
+        return fig
+
+    def generate_clims(self, data_in, norm_type='zero_center'):
+        """
+        Generate color limits for data visualization.
+
+        Parameters:
+            data_in (numpy.ndarray): Input data.
+            norm_type (str, optional): The type of normalization. Can be 'zero_center' or 'abs_max'. Defaults to 'zero_center'.
+
+        Returns:
+            tuple: Color limits for the heatmap.
+        """
+        if norm_type == 'zero_center':
+            max_abs = max(np.abs(np.nanmin(data_in)), np.abs(np.nanmax(data_in)))
+            clims = (-max_abs, max_abs)
+        elif norm_type == 'abs_max':
+            clims = (np.nanmin(data_in), np.nanmax(data_in))
+        else:
+            raise ValueError("Invalid norm_type. Should be either 'zero_center' or 'abs_max'.")
+        return clims
+
+    def plot_roi_trial_avg_trace(self, roi_idx):
+        """
+        Plot the trial-averaged trace for a specific ROI.
+
+        Parameters:
+            roi_idx (int): The index of the ROI.
+
+        Returns:
+            matplotlib.pyplot.figure: The figure object containing the trace plot.
+        """
+        fig, ax = plt.subplots()
+        for condition in self.conditions:
+            trace = np.nanmean(self.data_dict[condition]['data'][roi_idx, :], axis=0)
+            ax.plot(self.tvec, trace, label=condition)
+        ax.set_xlabel('Time (s)')
+        ax.set_ylabel('Average Signal')
+        ax.set_title(f'Trial Averaged Trace - ROI {roi_idx}')
+        ax.legend()
+        plt.show()
+        return fig
+
+    def plot_roi_trial_time_avg_bar(self, roi_idx, sort_method='peak_time', time_window=None):
+        """
+        Plot the time-averaged bar plot for a specific ROI.
+
+        Parameters:
+            roi_idx (int): The index of the ROI.
+            sort_method (str, optional): The method used to sort the ROIs. Can be 'peak_time' or 'max_value'. Defaults to 'peak_time'.
+            time_window (tuple, optional): The time window (in seconds) for computing the average value. Defaults to None.
+
+        Returns:
+            matplotlib.pyplot.figure: The figure object containing the bar plot.
+        """
+        if time_window is None:
+            time_window = (0, self.trial_start_end_sec[-1])
+
+        sort_epoch_start_time, sort_epoch_end_time = time_window
+        sort_epoch_start_samp = self.find_nearest_idx(self.tvec, sort_epoch_start_time)[0]
+        sort_epoch_end_samp = self.find_nearest_idx(self.tvec, sort_epoch_end_time)[0]
+
+        roi_data = self.data_dict[self.conditions[0]]['data'][roi_idx, sort_epoch_start_samp:sort_epoch_end_samp]
+
+        if sort_method == 'peak_time':
+            epoch_peak_samp = np.argmax(roi_data)
+            sorted_roi_order = np.argsort(epoch_peak_samp)
+        elif sort_method == 'max_value':
+            time_max = np.nanmax(roi_data)
+            sorted_roi_order = np.argsort(time_max)[::-1]
+        else:
+            raise ValueError("Invalid sort_method. Should be either 'peak_time' or 'max_value'.")
+
+        fig, ax = plt.subplots()
+        x_pos = np.arange(len(self.conditions))
+        for idx in sorted_roi_order:
+            avg_values = [np.nanmean(self.data_dict[condition]['data'][idx, sort_epoch_start_samp:sort_epoch_end_samp]) for condition in self.conditions]
+            ax.bar(x_pos, avg_values, label=f'ROI {idx}')
+            x_pos += 0.15
+        ax.set_xticks(np.arange(len(self.conditions)) + 0.15 * (len(sorted_roi_order) / 2))
+        ax.set_xticklabels(self.conditions)
+        ax.set_xlabel('Conditions')
+        ax.set_ylabel('Average Signal')
+        ax.set_title(f'Time Averaged Bar Plot - ROI {roi_idx}')
+        ax.legend()
+        plt.show()
+        return fig
+
+    def find_nearest_idx(self, array, value):
+        """
+        Find the nearest index in an array for a given value.
+
+        Parameters:
+            array (numpy.ndarray): The input array.
+            value (float): The value to find the nearest index for.
+
+        Returns:
+            int: The index of the nearest value in the array.
+        """
+        return np.abs(array - value).argmin()
+
+    def define_params(self, method='single'):
+        """
+        Define additional parameters based on the chosen method.
+
+        Parameters:
+            method (str, optional): The method used for defining additional parameters. Defaults to 'single'.
+
+        Returns:
+            dict: A dictionary containing additional parameters.
+        """
+        # Implementation of the define_params function
+        # Depending on the method chosen, return appropriate parameters.
+        if method == 'single':
+            params = {'param1': value1, 'param2': value2}
+        elif method == 'double':
+            params = {'param3': value3, 'param4': value4}
+        else:
+            raise ValueError("Invalid method. Should be either 'single' or 'double'.")
+        return params
