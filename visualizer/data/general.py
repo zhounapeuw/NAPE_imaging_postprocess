@@ -30,15 +30,15 @@ class BaseGeneralProcesser:
     def load_behav_data(self):
         if self.events_content:
             self.event_times = misc.df_to_dict(self.events_content)
-            event_frames = misc.dict_time_to_samples(self.event_times, self.fparams['fs'])
+            self.event_frames = misc.dict_time_to_samples(self.event_times, self.fparams['fs'])
 
             self.event_times = {}
             if self.fparams['selected_conditions']:
                 self.conditions = self.fparams['selected_conditions'] 
             else:
-                self.conditions = event_frames.keys()
+                self.conditions = self.event_frames.keys()
             for cond in self.conditions: # convert event samples to time in seconds
-                self.event_times[cond] = (np.array(event_frames[cond])/self.fparams['fs']).astype('int')
+                self.event_times[cond] = (np.array(self.event_frames[cond])/self.fparams['fs']).astype('int')
     
     def generate_all_data(self):
         self.load_signal_data()
@@ -84,13 +84,13 @@ class EventTicksProcessor(BaseGeneralProcesser):
         super().load_signal_data()
 
         if self.fparams['flag_normalization'] == 'dff':
-            signal_to_plot = np.apply_along_axis(misc.calc_dff, 1, self.signals_content)
+            signal_to_plot = np.apply_along_axis(misc.calc_dff, 1, self.signals)
         elif self.fparams['flag_normalization'] == 'dff_perc':
-            signal_to_plot = np.apply_along_axis(self.calc_dff_percentile, 1, self.signals_content)
+            signal_to_plot = np.apply_along_axis(self.calc_dff_percentile, 1, self.signals)
         elif self.fparams['flag_normalization'] == 'zscore':
-            signal_to_plot = np.apply_along_axis(self.calc_zscore, 1, self.signals_content, np.arange(0, self.signals_content.shape[1]))
+            signal_to_plot = np.apply_along_axis(self.calc_zscore, 1, self.signals, np.arange(0, self.signals.shape[1]))
         else:
-            signal_to_plot = self.signals_content
+            signal_to_plot = self.signals
 
         self.signal_to_plot = signal_to_plot
 
@@ -99,10 +99,10 @@ class EventTicksProcessor(BaseGeneralProcesser):
         self.min_max_all = [np.min(signal_to_plot), np.max(signal_to_plot)]
 
         if self.fparams['num_rois'] == 'all':
-            self.fparams['num_rois'] = self.signals_content.shape[0]
+            self.fparams['num_rois'] = self.signals.shape[0]
 
-        total_session_time = self.signals_content.shape[1] / self.fparams['fs']
-        tvec = np.round(np.linspace(0, total_session_time, self.signals_content.shape[1]), 2)
+        total_session_time = self.signals.shape[1] / self.fparams['fs']
+        tvec = np.round(np.linspace(0, total_session_time, self.signals.shape[1]), 2)
         self.tvec = tvec
     
     def generate_all_data(self):
@@ -152,10 +152,10 @@ class EventAnalysisProcessor(BaseGeneralProcesser):
         self.event_bound_ratio = [(self.t0_sample)/self.num_samples_trial , self.event_end_sample/self.num_samples_trial] # fraction of total samples for event start and end; only used for plotting line indicating event duration
     
     def load_signal_data(self):
+        super().load_signal_data()
+
         self.num_rois = self.signals.shape[0]
         self.all_nan_rois = np.where(np.apply_along_axis(is_all_nans, 1, self.signals))
-        
-        super().load_signal_data()
     
     def trial_preprocessing(self):
         self.data_dict = misc.extract_trial_data(self.signals, self.tvec, self.trial_begEnd_samp, self.event_frames, self.conditions, baseline_start_end_samp = self.baseline_begEnd_samp)

@@ -22,7 +22,7 @@ class EventTicksPlot:
                     x=self.data_processor.tvec,
                     y=self.data_processor.signal_to_plot[idx_roi, :]))
 
-        if self.data_processor.fname_events_content:
+        if self.data_processor.events_content:
             for idx_cond, cond in enumerate(self.data_processor.conditions):
                 for idx_ev, event in enumerate(self.data_processor.event_times[cond]):
                     if idx_ev == 0:
@@ -465,9 +465,5 @@ class EventAnalysisPlot:
             set_diff_keep_order = lambda main_list, remove_list : [i for i in main_list if i not in remove_list]
             sorted_roi_order = set_diff_keep_order(sorted_roi_order, self.data_processor.all_nan_rois)
             interesting_rois = [i for i in self.data_processor.fparams['interesting_rois'] if i not in self.data_processor.all_nan_rois]
-            
-        roi_order_path = os.path.join(self.data_processor.fparams['fdir'], self.data_processor.fparams['fname'] + '_roi_order.pkl')
-        with open(roi_order_path, 'wb') as handle:
-            pickle.dump(sorted_roi_order, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
         return self.plot_trial_avg_heatmap(self.data_processor.data_dict, self.data_processor.conditions, self.data_processor.tvec, self.data_processor.event_bound_ratio, self.data_processor.fparams["cmap_"], clims = self.generate_clims(np.concatenate([self.data_processor.data_dict[cond][self.data_processor.fparams["data_trial_avg_key"]].flatten() for cond in self.data_processor.conditions]), self.data_processor.fparams['flag_normalization']), sorted_roi_order = sorted_roi_order, rois_oi = interesting_rois)
