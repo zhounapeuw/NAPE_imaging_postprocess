@@ -45,9 +45,12 @@ def load_h5(fpath):
      reorganize the data dimension order"""
     return data_snip.transpose(1, 2, 0)
 
-def load_signals(fpath):
-    fpath_split = fpath.split(".")
-    fext = fpath_split[len(fpath_split) - 1]
+def load_signals(fpath, extension="csv"):
+    try:
+        fpath_split = fpath.split(".")
+        fext = fpath_split[len(fpath_split) - 1]
+    except:
+        fext = extension
 
     if 'npy' in fext:
         signals = np.squeeze(np.load(fpath))
