@@ -260,7 +260,7 @@ class EventAnalysisPlot:
             clims_out = [-clims_max*0.5, clims_max*0.5] # and set it as the negative and positive limit for plotting
         return clims_out
 
-    def subplot_trial_heatmap(self, data_in, tvec, event_bound_ratio, clims, title, subplot_index, cond, cmap_='inferno'):
+    def generate_heatmap(self, data_in, tvec, event_bound_ratio, clims, title, subplot_index, cond, cmap_='inferno'):
         """
         
         data_in : np.array with dimensions trials x samples
@@ -377,15 +377,85 @@ class EventAnalysisPlot:
             a.axis('off')
         
         return plt
+
+    def generate_bar_graph(self, iROI):
+        ### Quantification of roi-, trial-, time-averaged data
+
+        analysis_window = self.data_processor.fparams['event_sort_analysis_win']
+        analysis_win_samps = [ misc.find_nearest_idx(self.data_processor.tvec, time)[0] for time in analysis_window ]
+
+        to_plot = []
+        to_plot_err = []
+
+        for idx, cond in enumerate(self.data_processor.conditions):
+            line_color = self.cmap_lines(idx)
+            # first trial avg the data
+            trial_avg = np.nanmean(self.data_processor.data_dict[cond]['zdata'], axis=0)
+            
+            # z-score trial-avg data for each respective ROI
+            # apply zscore function to each row of data
+            apply_axis = 1 
+            zscore_trial_avg = np.apply_along_axis(misc.zscore_, apply_axis, trial_avg, self.data_processor.baseline_svec)
+            
+            # take avg across time
+            zscore_trial_time_avg = np.nanmean(zscore_trial_avg[:,analysis_win_samps[0]:analysis_win_samps[1],:], axis=1)
+            
+            # take avg/std across ROIs
+            zscore_roi_trial_time_avg = np.nanmean(zscore_trial_time_avg, axis=0)
+            zscore_roi_trial_time_std = np.nanstd(zscore_trial_time_avg, axis=0)
+            
+            to_plot.append(zscore_roi_trial_time_avg[0])
+            to_plot_err.append(zscore_roi_trial_time_std[0]/np.sqrt(len(zscore_trial_time_avg)))
+            
+        barlist = self.ax.bar(self.data_processor.conditions, to_plot, yerr=to_plot_err, align='center', alpha=0.5, ecolor='black', capsize=10 )
+        for idx in range(len(self.data_processor.conditions)):
+            barlist[idx].set_color(self.cmap_lines(idx))
+        self.ax.set_ylabel('Normalized Fluorescence', fontsize=13)
+        self.ax.set_title('ROI # {}; Time-averaged Quant'.format(str(iROI)), fontsize=15)
+        self.ax.yaxis.grid(True)
+        self.ax.tick_params(axis = 'both', which = 'major')
+        self.ax.tick_params(axis = 'x', which = 'major', rotation = 45)
     
-    def generate_heatmap(self):
+    def generate_line_graph(self, iROI):
+        for cond in self.data_processor.conditions:
+            
+            # prep data to plot
+            num_trials = self.data_processor.data_dict[cond]['num_trials']
+            to_plot = np.nanmean(self.data_processor.data_dict[cond][self.data_processor.fparams["data_trial_resolved_key"]][:,iROI,:], axis=0)
+            to_plot_err = np.nanstd(self.data_processor.data_dict[cond][self.data_processor.fparams["data_trial_resolved_key"]][:,iROI,:], axis=0)/np.sqrt(num_trials)
+            
+            # plot trace
+            self.ax.plot(self.data_processor.tvec, to_plot)
+            if self.data_processor.fparams['opto_blank_frame']: 
+                self.ax.plot(self.data_processor.tvec[self.data_processor.t0_sample:self.data_processor.event_end_sample], to_plot[self.data_processor.t0_sample:self.data_processor.event_end_sample], marker='.', color='g')
+            # plot shaded error
+            if self.data_processor.fparams['flag_trial_avg_errbar']:
+                self.ax.fill_between(self.data_processor.tvec, to_plot - to_plot_err, to_plot + to_plot_err,
+                            alpha=0.5) # this plots the shaded error bar
+            
+        # plot x, y labels, and legend
+        self.ax.set_ylabel(self.data_processor.fparams["ylabel"])
+        self.ax.set_xlabel('Time [s]')
+        self.ax.set_title('ROI # {}; Trial-avg'.format(str(iROI)))
+        self.ax.legend(self.data_processor.conditions)
+        self.ax.autoscale(enable=True, axis='both', tight=True)
+        self.ax.axvline(0, color='0.5', alpha=0.65) # plot vertical line for time zero
+        self.ax.annotate('', xy=(self.data_processor.event_bound_ratio[0], -0.01), xycoords='axes fraction', 
+                                    xytext=(self.data_processor.event_bound_ratio[1], -0.01), 
+                                    arrowprops=dict(arrowstyle="-", color='g'))
+        self.ax.tick_params(axis = 'both', which = 'major')
+    
+    def generate_roi_plots(self):
         self.cmap_lines = self.get_cmap(len(self.data_processor.conditions))
 
-        num_subplots = len(self.data_processor.conditions) + 1 # plus one for trial-avg traces
+        num_subplots = len(self.data_processor.conditions) # plus one for trial-avg traces
         n_columns = np.min([num_subplots, 4.0])
         n_rows = int(np.ceil(num_subplots/n_columns))
 
+        all_plots = []
+
         for iROI in range(self.data_processor.num_rois):
+            plots = {}
             
             # calculate color limits. This is outside of heatmap function b/c want lims across conditions
             # loop through each condition's data and flatten before concatenating values
@@ -402,43 +472,19 @@ class EventAnalysisPlot:
                 data_to_plot = self.data_processor.data_dict[cond][self.data_processor.fparams["data_trial_resolved_key"]][:, iROI, :]
                 title = 'ROI {}; {}'.format(str(iROI), cond)
                 
-                self.subplot_trial_heatmap(data_to_plot, self.data_processor.tvec, self.data_processor.event_bound_ratio, roi_clims, title, subplot_index, cond, self.data_processor.fparams["cmap_"])
+                self.generate_heatmap(data_to_plot, self.data_processor.tvec, self.data_processor.event_bound_ratio, roi_clims, title, subplot_index, cond, self.data_processor.fparams["cmap_"])
             
-            ### plot last subplot of trial-avg traces
-            
-            # determine subplot location index
-            subplot_index = self.data_processor.subplot_loc(num_subplots-1, n_rows, n_columns)
+            plots["heatmap"] = self.fig
 
-            for cond in self.data_processor.conditions:
-                
-                # prep data to plot
-                num_trials = self.data_processor.data_dict[cond]['num_trials']
-                to_plot = np.nanmean(self.data_processor.data_dict[cond][self.data_processor.fparams["data_trial_resolved_key"]][:,iROI,:], axis=0)
-                to_plot_err = np.nanstd(self.data_processor.data_dict[cond][self.data_processor.fparams["data_trial_resolved_key"]][:,iROI,:], axis=0)/np.sqrt(num_trials)
-                
-                # plot trace
-                self.ax[subplot_index].plot(self.data_processor.tvec, to_plot)
-                if self.data_processor.fparams['opto_blank_frame']: 
-                    self.ax[subplot_index].plot(self.data_processor.tvec[self.data_processor.t0_sample:self.data_processor.event_end_sample], to_plot[self.data_processor.t0_sample:self.data_processor.event_end_sample], marker='.', color='g')
-                # plot shaded error
-                if self.data_processor.fparams['flag_trial_avg_errbar']:
-                    self.ax[subplot_index].fill_between(self.data_processor.tvec, to_plot - to_plot_err, to_plot + to_plot_err,
-                                alpha=0.5) # this plots the shaded error bar
-                
-            # plot x, y labels, and legend
-            self.ax[subplot_index].set_ylabel(self.data_processor.fparams["ylabel"])
-            self.ax[subplot_index].set_xlabel('Time [s]')
-            self.ax[subplot_index].set_title('ROI # {}; Trial-avg'.format(str(iROI)))
-            self.ax[subplot_index].legend(self.data_processor.conditions)
-            self.ax[subplot_index].autoscale(enable=True, axis='both', tight=True)
-            self.ax[subplot_index].axvline(0, color='0.5', alpha=0.65) # plot vertical line for time zero
-            self.ax[subplot_index].annotate('', xy=(self.data_processor.event_bound_ratio[0], -0.01), xycoords='axes fraction', 
-                                        xytext=(self.data_processor.event_bound_ratio[1], -0.01), 
-                                        arrowprops=dict(arrowstyle="-", color='g'))
-            self.ax[subplot_index].tick_params(axis = 'both', which = 'major')
-            
-            for a in self.ax.flat[num_subplots:]:
-                a.axis('off')
+            self.fig, self.ax = plt.subplots(1,1, figsize = (5, 4))
+            self.generate_line_graph(iROI)
+            plots["linegraph"] = self.fig
+
+            self.fig, self.ax = plt.subplots(1,1, figsize = (5, 4))
+            self.generate_bar_graph(iROI)
+            plots["bargraph"] = self.fig
+
+            all_plots.append(plots)
 
         self.tvec2samp = lambda tvec, time: np.argmin(np.abs(tvec - time))
 
@@ -466,4 +512,8 @@ class EventAnalysisPlot:
             sorted_roi_order = set_diff_keep_order(sorted_roi_order, self.data_processor.all_nan_rois)
             interesting_rois = [i for i in self.data_processor.fparams['interesting_rois'] if i not in self.data_processor.all_nan_rois]
 
-        return self.plot_trial_avg_heatmap(self.data_processor.data_dict, self.data_processor.conditions, self.data_processor.tvec, self.data_processor.event_bound_ratio, self.data_processor.fparams["cmap_"], clims = self.generate_clims(np.concatenate([self.data_processor.data_dict[cond][self.data_processor.fparams["data_trial_avg_key"]].flatten() for cond in self.data_processor.conditions]), self.data_processor.fparams['flag_normalization']), sorted_roi_order = sorted_roi_order, rois_oi = interesting_rois)
+        all_plots.append({
+            "heatmap": self.plot_trial_avg_heatmap(self.data_processor.data_dict, self.data_processor.conditions, self.data_processor.tvec, self.data_processor.event_bound_ratio, self.data_processor.fparams["cmap_"], clims = self.generate_clims(np.concatenate([self.data_processor.data_dict[cond][self.data_processor.fparams["data_trial_avg_key"]].flatten() for cond in self.data_processor.conditions]), self.data_processor.fparams['flag_normalization']), sorted_roi_order = sorted_roi_order, rois_oi = interesting_rois)
+        })
+
+        return all_plots

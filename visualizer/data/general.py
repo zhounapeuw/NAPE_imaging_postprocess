@@ -108,14 +108,6 @@ class EventTicksProcessor(BaseGeneralProcesser):
     def generate_all_data(self):
         super().generate_all_data()
 
-def is_all_nans(vector):
-    """
-    checks if series or vector contains all nans; returns boolean. Used to identify and exclude all-nan rois
-    """
-    if isinstance(vector, pd.Series):
-        vector = vector.values
-    return np.isnan(vector).all()
-
 class EventAnalysisProcessor(BaseGeneralProcesser):
     def __init__(self, fparams, signals_content, events_content):
         super().__init__(signals_content, events_content)
@@ -155,7 +147,7 @@ class EventAnalysisProcessor(BaseGeneralProcesser):
         super().load_signal_data()
 
         self.num_rois = self.signals.shape[0]
-        self.all_nan_rois = np.where(np.apply_along_axis(is_all_nans, 1, self.signals))
+        self.all_nan_rois = np.where(np.apply_along_axis(misc.is_all_nans, 1, self.signals))
     
     def trial_preprocessing(self):
         self.data_dict = misc.extract_trial_data(self.signals, self.tvec, self.trial_begEnd_samp, self.event_frames, self.conditions, baseline_start_end_samp = self.baseline_begEnd_samp)

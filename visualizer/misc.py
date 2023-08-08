@@ -379,3 +379,21 @@ def df_to_dict(fpath):
     for condition in event_frames_df['event'].unique():
         event_frames_dict[condition] = list(event_frames_df[event_frames_df['event'] == condition]['time'])
     return event_frames_dict
+
+# function for finding the index of the closest entry in an array to a provided value
+def find_nearest_idx(array, value):
+    if isinstance(array, pd.Series):
+        idx = (np.abs(array - value)).idxmin()
+        return idx, array.index.get_loc(idx), array[idx] # series index, 0-relative index, entry value
+    else:
+        array = np.asarray(array)
+        idx = (np.abs(array - value)).argmin()
+        return idx, array[idx]
+    
+def is_all_nans(vector):
+    """
+    checks if series or vector contains all nans; returns boolean. Used to identify and exclude all-nan rois
+    """
+    if isinstance(vector, pd.Series):
+        vector = vector.values
+    return np.isnan(vector).all()
