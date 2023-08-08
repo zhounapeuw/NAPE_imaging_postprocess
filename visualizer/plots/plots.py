@@ -99,7 +99,7 @@ class S2PActivityPlot:
             for idx, roi_id in enumerate(self.data_processor.plot_vars['cell_ids']):
                 if roi_id in self.data_processor.plot_vars['rois_to_tseries'] or self.data_processor.plot_vars[
                     'color_all_rois']:
-                    this_roi_color = plt.cm.viridis(idx_color_rois)
+                    this_roi_color = self.data_processor.plot_vars['colors_roi_name'][idx_color_rois]
                     idx_color_rois += 1
                 else:
                     this_roi_color = 'grey'
@@ -175,6 +175,7 @@ class S2PActivityPlot:
                 if idx == np.ceil(self.data_processor.plot_vars['num_rois_to_tseries'] / 2 - 1):
                     ax[idx].set_ylabel('Fluorescence Level', fontsize=20)
 
+            plt.subplots_adjust(hspace=0.5)
             plt.setp(ax, xlim=None, ylim=[np.min(self.data_processor.s2p_data_dict['F_npil_corr_dff']) * 1.1,
                                             np.max(self.data_processor.s2p_data_dict['F_npil_corr_dff']) * 1.1])
 

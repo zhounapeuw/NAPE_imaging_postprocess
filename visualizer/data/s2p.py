@@ -44,11 +44,10 @@ class S2PActivityProcessor:
         self.plot_vars['num_total_rois'] = len(self.plot_vars['cell_ids'])
         self.plot_vars['color_all_rois'] = self.color_all_rois
 
-        max_rois_tseries = 10
         if isinstance(self.path_dict['rois_to_plot'], list):
             self.plot_vars['rois_to_tseries'] = self.path_dict['rois_to_plot']
-        elif self.plot_vars['num_total_rois'] > max_rois_tseries:
-            self.plot_vars['rois_to_tseries'] = sorted(random.sample(self.plot_vars['cell_ids'].tolist(), max_rois_tseries))
+        elif isinstance(self.path_dict['rois_to_plot'], int):
+            self.plot_vars['rois_to_tseries'] = [x for x in range(self.path_dict['rois_to_plot'] + 1)]
         else:
             self.plot_vars['rois_to_tseries'] = self.plot_vars['cell_ids']
 
@@ -61,7 +60,7 @@ class S2PActivityProcessor:
             num_rois_to_color = self.plot_vars['num_rois_to_tseries']
             
         self.plot_vars['colors_roi_name'] = plt.cm.viridis(np.linspace(0,1,num_rois_to_color))
-        self.plot_vars['colors_roi'] = [f'rgb{tuple(np.round(np.array(c[:3]) * 254).astype(int))}' for c in plt.cm.viridis(np.linspace(0, 1, self.plot_vars['num_rois_to_tseries']))]
+        self.plot_vars['colors_roi'] = [f'rgb{tuple(np.round(np.array(c[:3]) * 254).astype(int))}' for c in plt.cm.viridis(np.linspace(0, 1, len(self.plot_vars['cell_ids'])))]
         self.plot_vars['s2p_masks'] = np.empty([self.plot_vars['num_total_rois'], self.s2p_data_dict['ops']['Ly'], self.s2p_data_dict['ops']['Lx']])
         self.plot_vars['roi_centroids'] = np.empty([self.plot_vars['num_total_rois'], 2])
 
