@@ -1,1 +1,2 @@
-from .data import EventTicksProcessor, S2PActivityProcessor, EventAnalysisProcessor
+from .general import EventTicksProcessor, EventAnalysisProcessor
+from .s2p import S2PActivityProcessor

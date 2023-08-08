@@ -45,14 +45,19 @@ def load_h5(fpath):
      reorganize the data dimension order"""
     return data_snip.transpose(1, 2, 0)
 
-
 def load_signals(fpath):
-    df_signals = pd.read_csv(fpath, header=None)
-    if 'Time(s)/Cell Status' in df_signals.values:
-        # for inscopix data, drop first two rows and first column, and transpose
-        signals = np.transpose(df_signals.drop([0,1], axis=0).iloc[:, 1:].values.astype(np.float32))
-    else:
-        signals = df_signals.values
+    fpath_split = fpath.split(".")
+    fext = fpath_split[len(fpath_split) - 1]
+
+    if 'npy' in fext:
+        signals = np.squeeze(np.load(fpath))
+    elif 'csv' in fext:
+        df_signals = pd.read_csv(fpath, header=None)
+        if 'Time(s)/Cell Status' in df_signals.values:
+            # for inscopix data, drop first two rows and first column, and transpose
+            signals = np.transpose(df_signals.drop([0,1], axis=0).iloc[:, 1:].values.astype(np.float32))
+        else:
+            signals = df_signals.values
 
     return signals
 

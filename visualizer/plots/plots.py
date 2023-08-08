@@ -1,8 +1,11 @@
+import pickle
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.graph_objects as go
+from visualizer import misc
+import os
 
 class EventTicksPlot:
     def __init__(self, data_processor):
@@ -240,140 +243,230 @@ class S2PActivityPlot:
 
 class EventAnalysisPlot:
     def __init__(self, data_processor):
-        """
-        Initialize the Visualization class.
-
-        Parameters:
-            data_processor (DataProcessor): An instance of the DataProcessor class.
-        """
         self.data_processor = data_processor
+    
+    def get_cmap(self, n, name='plasma'):
+        '''Returns a function that maps each index in 0, 1, ..., n-1 to a distinct 
+        RGB color; the keyword argument name must be a standard mpl colormap name.'''
+        return plt.cm.get_cmap(name, n)
 
-    def plot_raw_trace(self, roi_idx):
+    # calculate all the color limits for heatmaps; useful for locking color limits across different heatmap subplots   
+    def generate_clims(self, data_in, norm_type):
+        # get min and max for all data across conditions 
+        clims_out = [np.nanmin(data_in), np.nanmax(data_in)]
+        if 'zscore' in norm_type: # if data are zscored, make limits symmetrical and centered at 0
+            clims_max = np.max(np.abs(clims_out)) # then we take the higher of the two magnitudes
+            clims_out = [-clims_max*0.5, clims_max*0.5] # and set it as the negative and positive limit for plotting
+        return clims_out
+
+    def subplot_trial_heatmap(self, data_in, tvec, event_bound_ratio, clims, title, subplot_index, cond, cmap_='inferno'):
         """
-        Plot the raw trace for a specific ROI.
-
-        Parameters:
-            roi_idx (int): The index of the ROI.
-
-        Returns:
-            matplotlib.pyplot.figure: The figure object containing the trace plot.
-        """
-        fig, ax = plt.subplots()
-        for condition in self.data_processor.conditions:
-            ax.plot(self.data_processor.tvec, self.data_processor.data_dict[condition]['data'][roi_idx, :], label=condition)
-        ax.set_xlabel('Time (s)')
-        ax.set_ylabel('Raw Signal')
-        ax.set_title(f'Raw Trace - ROI {roi_idx}')
-        ax.legend()
-        plt.show()
-        return fig
-
-    def plot_trial_avg_heatmap(self, data_key, sort_roi_order=None, clims=None):
-        """
-        Plot the trial-averaged heatmap for the specified data key.
-
-        Parameters:
-            data_key (str): The key of the data to plot.
-            sort_roi_order (list, optional): The custom order of ROIs for sorting the heatmap. Defaults to None.
-            clims (tuple, optional): The color limits for the heatmap. Defaults to None.
-
-        Returns:
-            matplotlib.pyplot.figure: The figure object containing the heatmap.
-        """
-        return self.data_processor.plot_trial_avg_heatmap(data_key, sort_roi_order, clims)
-
-    def plot_roi_trial_avg_trace(self, roi_idx):
-        """
-        Plot the trial-averaged trace for a specific ROI.
-
-        Parameters:
-            roi_idx (int): The index of the ROI.
-
-        Returns:
-            matplotlib.pyplot.figure: The figure object containing the trace plot.
-        """
-        return self.data_processor.plot_roi_trial_avg_trace(roi_idx)
-
-    def plot_roi_trial_time_avg_bar(self, roi_idx, sort_method='peak_time', time_window=None):
-        """
-        Plot the time-averaged bar plot for a specific ROI.
-
-        Parameters:
-            roi_idx (int): The index of the ROI.
-            sort_method (str, optional): The method used to sort the ROIs. Can be 'peak_time' or 'max_value'. Defaults to 'peak_time'.
-            time_window (tuple, optional): The time window (in seconds) for computing the average value. Defaults to None.
-
-        Returns:
-            matplotlib.pyplot.figure: The figure object containing the bar plot.
-        """
-        return self.data_processor.plot_roi_trial_time_avg_bar(roi_idx, sort_method, time_window)
-
-    def plot_multi_roi_trial_avg_trace(self, roi_indices):
-        """
-        Plot the trial-averaged trace for multiple ROIs.
-
-        Parameters:
-            roi_indices (list): A list of ROI indices.
-
-        Returns:
-            matplotlib.pyplot.figure: The figure object containing the trace plot.
-        """
-        fig, ax = plt.subplots()
-        for roi_idx in roi_indices:
-            for condition in self.data_processor.conditions:
-                trace = np.nanmean(self.data_processor.data_dict[condition]['data'][roi_idx, :], axis=0)
-                ax.plot(self.data_processor.tvec, trace, label=f'ROI {roi_idx} - {condition}')
-        ax.set_xlabel('Time (s)')
-        ax.set_ylabel('Average Signal')
-        ax.set_title('Trial Averaged Trace - Multiple ROIs')
-        ax.legend()
-        plt.show()
-        return fig
-
-    def plot_multi_roi_trial_time_avg_bar(self, roi_indices, sort_method='peak_time', time_window=None):
-        """
-        Plot the time-averaged bar plot for multiple ROIs.
-
-        Parameters:
-            roi_indices (list): A list of ROI indices.
-            sort_method (str, optional): The method used to sort the ROIs. Can be 'peak_time' or 'max_value'. Defaults to 'peak_time'.
-            time_window (tuple, optional): The time window (in seconds) for computing the average value. Defaults to None.
-
-        Returns:
-            matplotlib.pyplot.figure: The figure object containing the bar plot.
-        """
-        if time_window is None:
-            time_window = (0, self.data_processor.trial_start_end_sec[-1])
-
-        sort_epoch_start_time, sort_epoch_end_time = time_window
-        sort_epoch_start_samp = self.data_processor.find_nearest_idx(self.data_processor.tvec, sort_epoch_start_time)[0]
-        sort_epoch_end_samp = self.data_processor.find_nearest_idx(self.data_processor.tvec, sort_epoch_end_time)[0]
-
-        fig, ax = plt.subplots()
-        x_pos = np.arange(len(self.data_processor.conditions))
-
-        for roi_idx in roi_indices:
-            roi_data = self.data_processor.data_dict[self.data_processor.conditions[0]]['data'][roi_idx, sort_epoch_start_samp:sort_epoch_end_samp]
+        
+        data_in : np.array with dimensions trials x samples
             
-            if sort_method == 'peak_time':
-                epoch_peak_samp = np.argmax(roi_data)
-                sorted_roi_order = np.argsort(epoch_peak_samp)
-            elif sort_method == 'max_value':
-                time_max = np.nanmax(roi_data)
-                sorted_roi_order = np.argsort(time_max)[::-1]
+        
+        Prep information about specific condition (each loop) and plot heatmap
+            1) x/y label tick values
+            2) x/y labels
+            3) grab specific condition's data
+            4) plot data (using misc function)
+            5) plot meta data lines (eg. 0-time line, event duration line)
+
+        event_bound_ratio : list of two entries
+            where entries are fraction of total samples for event start and end. Used for mapping which samples to plot green line 
+            indicating event duration
+        """
+
+        # set imshow extent to replace x and y axis ticks/labels
+        plot_extent = [tvec[0], tvec[-1], data_in.shape[0], 0] # [x min, x max, y min, ymax]
+
+        # prep labels; plot x and y labels for first subplot
+        if subplot_index == (0, 0) or subplot_index == 0 :
+            self.ax[subplot_index].set_ylabel('Trial')
+            self.ax[subplot_index].set_xlabel('Time [s]');
+        self.ax[subplot_index].tick_params(axis = 'both', which = 'major')
+
+        # prep the data
+        to_plot = np.squeeze(data_in)
+        if len(self.data_processor.event_frames[cond]) == 1: # accomodates single trial data
+            to_plot = to_plot[np.newaxis, :]
+
+        # plot the data
+        im = misc.subplot_heatmap(self.ax[subplot_index], title, to_plot, cmap=cmap_, clims=clims, extent_=plot_extent)
+
+        # add meta data lines
+        self.ax[subplot_index].axvline(0, color='0.5', alpha=1) # plot vertical line for time zero
+        # plots green horizontal line indicating event duration
+        self.ax[subplot_index].annotate('', xy=(event_bound_ratio[0], -0.01), xycoords='axes fraction', 
+                                xytext=(event_bound_ratio[1], -0.01), 
+                                arrowprops=dict(arrowstyle="-", color='g'))
+
+        cbar = self.fig.colorbar(im, ax = self.ax[subplot_index], shrink = 0.5)
+        cbar.ax.set_ylabel(self.data_processor.fparams["ylabel"])
+    
+    def sort_heatmap_peaks(self, data, tvec, sort_epoch_start_time, sort_epoch_end_time, sort_method = 'peak_time'):
+        
+        # find start/end samples for epoch
+        sort_epoch_start_samp = self.tvec2samp(tvec, sort_epoch_start_time)
+        sort_epoch_end_samp = self.tvec2samp(tvec, sort_epoch_end_time)
+        
+        if sort_method == 'peak_time':
+            epoch_peak_samp = np.argmax(data[:,sort_epoch_start_samp:sort_epoch_end_samp], axis=1)
+            final_sorting = np.argsort(epoch_peak_samp)
+        elif sort_method == 'max_value':
+    
+            time_max = np.nanmax(data[:,sort_epoch_start_samp:sort_epoch_end_samp], axis=1)
+            final_sorting = np.argsort(time_max)[::-1]
+
+        return final_sorting
+
+    def plot_trial_avg_heatmap(self, data_in, conditions, tvec, event_bound_ratio, cmap, clims, sorted_roi_order = None, rois_oi = None):
+        """
+        Technically doesn't need to remove all_nan_rois b/c of nanmean calculations
+        """
+        
+        num_subplots = len(conditions)
+        n_columns = np.min([num_subplots, 3.0])
+        n_rows = int(np.ceil(num_subplots/n_columns))
+
+        # set imshow extent to replace x and y axis ticks/labels (replace samples with time)
+        plot_extent = [tvec[0], tvec[-1], self.data_processor.num_rois, 0 ]
+
+        fig, ax = plt.subplots(nrows=n_rows, ncols=int(n_columns), figsize = (n_columns*5, n_rows*4))
+        if not isinstance(ax,np.ndarray): # this is here to make the code below compatible with indexing a single subplot object
+            ax = [ax]
+
+        for idx, cond in enumerate(conditions):
+
+            # determine subplot location index
+            if n_rows == 1:
+                subplot_index = idx
             else:
-                raise ValueError("Invalid sort_method. Should be either 'peak_time' or 'max_value'.")
+                subplot_index = np.unravel_index(idx, (n_rows, int(n_columns))) # turn int index to a tuple of array coordinates
 
-            for idx in sorted_roi_order:
-                avg_values = [np.nanmean(self.data_processor.data_dict[condition]['data'][roi_idx, sort_epoch_start_samp:sort_epoch_end_samp]) for condition in self.data_processor.conditions]
-                ax.bar(x_pos, avg_values, label=f'ROI {roi_idx}')
-                x_pos += 0.15
+            # prep labels; plot x and y labels for first subplot
+            if subplot_index == (0, 0) or subplot_index == 0 :
+                ax[subplot_index].set_ylabel('ROI #')
+                ax[subplot_index].set_xlabel('Time [s]');
+            ax[subplot_index].tick_params(axis = 'both', which = 'major')
+            
+            # plot the data
+            if sorted_roi_order is not None:
+                roi_order = sorted_roi_order
+            else:
+                roi_order = slice(0, self.data_processor.num_rois)
+            to_plot = data_in[cond][self.data_processor.fparams["data_trial_avg_key"]][roi_order,:] # 
 
-        ax.set_xticks(np.arange(len(self.data_processor.conditions)) + 0.15 * (len(sorted_roi_order) / 2))
-        ax.set_xticklabels(self.data_processor.conditions)
-        ax.set_xlabel('Conditions')
-        ax.set_ylabel('Average Signal')
-        ax.set_title('Time Averaged Bar Plot - Multiple ROIs')
-        ax.legend()
-        plt.show()
-        return fig
+            im = misc.subplot_heatmap(ax[subplot_index], cond, to_plot, cmap=self.data_processor.fparams["cmap_"], clims=clims, extent_=plot_extent)
+            ax[subplot_index].axvline(0, color='k', alpha=0.3) # plot vertical line for time zero
+            ax[subplot_index].annotate('', xy=(event_bound_ratio[0], -0.01), xycoords='axes fraction', 
+                                        xytext=(event_bound_ratio[1], -0.01), 
+                                        arrowprops=dict(arrowstyle="-", color='g'))
+            if rois_oi is not None:
+                for ROI_OI in rois_oi:
+                    ax[subplot_index].annotate('', xy=(1.005, 1-(ROI_OI/self.data_processor.num_rois)-0.015), xycoords='axes fraction', 
+                                            xytext=(1.06, 1-(ROI_OI/self.data_processor.num_rois)-0.015), 
+                                            arrowprops=dict(arrowstyle="->", color='k'))
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+        cbar = fig.colorbar(im, ax = ax, shrink = 0.7)
+        cbar.ax.set_ylabel(self.data_processor.fparams["ylabel"], fontsize=13)
+        
+        # hide empty subplot
+        for a in ax.flat[num_subplots:]:
+            a.axis('off')
+        
+        return plt
+    
+    def generate_heatmap(self):
+        self.cmap_lines = self.get_cmap(len(self.data_processor.conditions))
+
+        num_subplots = len(self.data_processor.conditions) + 1 # plus one for trial-avg traces
+        n_columns = np.min([num_subplots, 4.0])
+        n_rows = int(np.ceil(num_subplots/n_columns))
+
+        for iROI in range(self.data_processor.num_rois):
+            
+            # calculate color limits. This is outside of heatmap function b/c want lims across conditions
+            # loop through each condition's data and flatten before concatenating values
+            roi_clims = self.generate_clims(np.concatenate([self.data_processor.data_dict[cond][self.data_processor.fparams["data_trial_resolved_key"]][:, iROI, :].flatten() for cond in self.data_processor.conditions]), self.data_processor.fparams['flag_normalization'])
+            
+            self.fig, self.ax = plt.subplots(nrows=n_rows, ncols=int(n_columns), 
+                                figsize=(n_columns*4, n_rows*3),
+                                constrained_layout=True)
+            
+            ### Plot heatmaps for each condition
+            for idx_cond, cond in enumerate(self.data_processor.conditions):
+                
+                subplot_index = self.data_processor.subplot_loc(idx_cond, n_rows, n_columns) # determine subplot location index
+                data_to_plot = self.data_processor.data_dict[cond][self.data_processor.fparams["data_trial_resolved_key"]][:, iROI, :]
+                title = 'ROI {}; {}'.format(str(iROI), cond)
+                
+                self.subplot_trial_heatmap(data_to_plot, self.data_processor.tvec, self.data_processor.event_bound_ratio, roi_clims, title, subplot_index, cond, self.data_processor.fparams["cmap_"])
+            
+            ### plot last subplot of trial-avg traces
+            
+            # determine subplot location index
+            subplot_index = self.data_processor.subplot_loc(num_subplots-1, n_rows, n_columns)
+
+            for cond in self.data_processor.conditions:
+                
+                # prep data to plot
+                num_trials = self.data_processor.data_dict[cond]['num_trials']
+                to_plot = np.nanmean(self.data_processor.data_dict[cond][self.data_processor.fparams["data_trial_resolved_key"]][:,iROI,:], axis=0)
+                to_plot_err = np.nanstd(self.data_processor.data_dict[cond][self.data_processor.fparams["data_trial_resolved_key"]][:,iROI,:], axis=0)/np.sqrt(num_trials)
+                
+                # plot trace
+                self.ax[subplot_index].plot(self.data_processor.tvec, to_plot)
+                if self.data_processor.fparams['opto_blank_frame']: 
+                    self.ax[subplot_index].plot(self.data_processor.tvec[self.data_processor.t0_sample:self.data_processor.event_end_sample], to_plot[self.data_processor.t0_sample:self.data_processor.event_end_sample], marker='.', color='g')
+                # plot shaded error
+                if self.data_processor.fparams['flag_trial_avg_errbar']:
+                    self.ax[subplot_index].fill_between(self.data_processor.tvec, to_plot - to_plot_err, to_plot + to_plot_err,
+                                alpha=0.5) # this plots the shaded error bar
+                
+            # plot x, y labels, and legend
+            self.ax[subplot_index].set_ylabel(self.data_processor.fparams["ylabel"])
+            self.ax[subplot_index].set_xlabel('Time [s]')
+            self.ax[subplot_index].set_title('ROI # {}; Trial-avg'.format(str(iROI)))
+            self.ax[subplot_index].legend(self.data_processor.conditions)
+            self.ax[subplot_index].autoscale(enable=True, axis='both', tight=True)
+            self.ax[subplot_index].axvline(0, color='0.5', alpha=0.65) # plot vertical line for time zero
+            self.ax[subplot_index].annotate('', xy=(self.data_processor.event_bound_ratio[0], -0.01), xycoords='axes fraction', 
+                                        xytext=(self.data_processor.event_bound_ratio[1], -0.01), 
+                                        arrowprops=dict(arrowstyle="-", color='g'))
+            self.ax[subplot_index].tick_params(axis = 'both', which = 'major')
+            
+            for a in self.ax.flat[num_subplots:]:
+                a.axis('off')
+
+        self.tvec2samp = lambda tvec, time: np.argmin(np.abs(tvec - time))
+
+        # if flag is true, sort ROIs (usually by average fluorescence within analysis window)
+        if self.data_processor.fparams['flag_sort_rois']:
+            if not self.data_processor.fparams['roi_sort_cond']: # if no condition to sort by specified, use first condition
+                self.data_processor.fparams['roi_sort_cond'] = self.data_processor.data_dict.keys()[0]
+            if not self.data_processor.fparams['roi_sort_cond'] in self.data_processor.data_dict.keys():
+                sorted_roi_order = range(self.data_processor.num_rois)
+                interesting_rois = self.data_processor.fparams['interesting_rois']
+                print('Specified condition to sort by doesn\'t exist! ROIs are in default sorting.')
+            else:
+                # returns new order of rois sorted using the data and method supplied in the specified window
+                sorted_roi_order = self.sort_heatmap_peaks(self.data_processor.data_dict[self.data_processor.fparams['roi_sort_cond']]['ztrial_avg_data'], self.data_processor.tvec, sort_epoch_start_time=0, 
+                                sort_epoch_end_time = self.data_processor.trial_start_end_sec[-1], 
+                                sort_method = self.data_processor.fparams['user_sort_method'])
+                # finds corresponding interesting roi (roi's to mark with an arrow) order after sorting
+                interesting_rois = np.in1d(sorted_roi_order, self.data_processor.fparams['interesting_rois']).nonzero()[0] 
+        else:
+            sorted_roi_order = range(self.data_processor.num_rois)
+            interesting_rois = self.data_processor.fparams['interesting_rois']
+
+        if not self.data_processor.all_nan_rois[0].size == 0:
+            set_diff_keep_order = lambda main_list, remove_list : [i for i in main_list if i not in remove_list]
+            sorted_roi_order = set_diff_keep_order(sorted_roi_order, self.data_processor.all_nan_rois)
+            interesting_rois = [i for i in self.data_processor.fparams['interesting_rois'] if i not in self.data_processor.all_nan_rois]
+            
+        roi_order_path = os.path.join(self.data_processor.fparams['fdir'], self.data_processor.fparams['fname'] + '_roi_order.pkl')
+        with open(roi_order_path, 'wb') as handle:
+            pickle.dump(sorted_roi_order, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+        return self.plot_trial_avg_heatmap(self.data_processor.data_dict, self.data_processor.conditions, self.data_processor.tvec, self.data_processor.event_bound_ratio, self.data_processor.fparams["cmap_"], clims = self.generate_clims(np.concatenate([self.data_processor.data_dict[cond][self.data_processor.fparams["data_trial_avg_key"]].flatten() for cond in self.data_processor.conditions]), self.data_processor.fparams['flag_normalization']), sorted_roi_order = sorted_roi_order, rois_oi = interesting_rois)
