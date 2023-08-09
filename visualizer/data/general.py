@@ -149,6 +149,11 @@ class EventAnalysisProcessor(BaseGeneralProcesser):
         self.num_rois = self.signals.shape[0]
         self.all_nan_rois = np.where(np.apply_along_axis(misc.is_all_nans, 1, self.signals))
     
+    def get_num_rois(self):
+        if self.num_rois:
+            return self.num_rois
+        return "Not defined yet: run load_signal_data() first"
+    
     def trial_preprocessing(self):
         self.data_dict = misc.extract_trial_data(self.signals, self.tvec, self.trial_begEnd_samp, self.event_frames, self.conditions, baseline_start_end_samp = self.baseline_begEnd_samp)
     
