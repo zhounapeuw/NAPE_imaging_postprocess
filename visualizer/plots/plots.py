@@ -111,23 +111,20 @@ class S2PActivityPlot:
 
             return plt
         else:
-            show_labels_=True
-            cmap_scale_ratio=1
-
             to_plot = self.data_processor.s2p_data_dict['ops']['meanImg']
             fig = go.Figure()
 
             # Add the image as a heatmap trace
             heatmap_trace = go.Heatmap(z=to_plot,
                                     colorscale='gray',
-                                    zmin=np.min(to_plot) * (1.0 / cmap_scale_ratio),
-                                    zmax=np.max(to_plot) * (1.0 / cmap_scale_ratio),
+                                    zmin=np.min(to_plot),
+                                    zmax=np.max(to_plot),
                                     showscale=False)  # Set showscale to False to hide the colorbar
             fig.add_trace(heatmap_trace)
 
             # Create a scatter trace for each contour
             for idx, roi_id in enumerate(self.data_processor.plot_vars['cell_ids']):
-                if roi_id in self.data_processor.plot_vars['rois_to_tseries']:
+                if roi_id in self.data_processor.plot_vars['rois_to_tseries'] or self.data_processor.plot_vars['color_all_rois']:
                     this_roi_color = self.data_processor.plot_vars['colors_roi'][idx]
                 else:
                     this_roi_color = 'grey'
@@ -144,7 +141,7 @@ class S2PActivityPlot:
                 fig.add_trace(contour_trace)
 
                 # Add the ROI label
-                if show_labels_ and roi_id in self.data_processor.plot_vars['rois_to_tseries']:
+                if self.data_processor.show_labels and roi_id in self.data_processor.plot_vars['rois_to_tseries']:
                     fig.add_annotation(text=str(roi_id),
                                     x=self.data_processor.plot_vars['roi_centroids'][idx][1] - 1,
                                     y=self.data_processor.plot_vars['roi_centroids'][idx][0] - 1,
@@ -162,26 +159,50 @@ class S2PActivityPlot:
 
     def generate_time_series_plot(self, package="plotly"):
         if package == "matplotlib":
-            fig, ax = plt.subplots(self.data_processor.plot_vars['num_rois_to_tseries'], 1,
-                                figsize=(9, 2 * self.data_processor.plot_vars['num_rois_to_tseries']))
-            for idx in range(self.data_processor.plot_vars['num_rois_to_tseries']):
-                to_plot = self.data_processor.s2p_data_dict['F_npil_corr_dff'][self.data_processor.plot_vars['rois_to_tseries'][idx]]
+            if self.data_processor.plot_vars['num_rois_to_tseries'] > 1:
+                fig, ax = plt.subplots(self.data_processor.plot_vars['num_rois_to_tseries'], 1,
+                                    figsize=(9, 2 * self.data_processor.plot_vars['num_rois_to_tseries']))
+                for idx in range(self.data_processor.plot_vars['num_rois_to_tseries']):
+                    to_plot = self.data_processor.s2p_data_dict['F_npil_corr_dff'][self.data_processor.plot_vars['rois_to_tseries'][idx]]
+                    tvec = np.linspace(0, to_plot.shape[0] / self.data_processor.s2p_data_dict['ops']['fs'], to_plot.shape[0])
+                    ax[idx].plot(tvec, np.transpose(to_plot), color=self.data_processor.plot_vars['colors_roi_name'][idx])
+
+                    ax[idx].set_title(f"ROI {self.data_processor.plot_vars['rois_to_tseries'][idx]}")
+                    ax[idx].tick_params(axis='both', which='major', labelsize=13)
+                    ax[idx].tick_params(axis='both', which='minor', labelsize=13)
+
+                    if self.data_processor.path_dict['tseries_start_end']:
+                        ax.set_xlim(self.data_processor.path_dict['tseries_start_end'][0], self.data_processor.path_dict['tseries_start_end'][1])
+
+                plt.subplots_adjust(hspace=0.5)
+                plt.setp(ax, xlim=None, ylim=[np.min(self.data_processor.s2p_data_dict['F_npil_corr_dff']) * 1.1,
+                                                np.max(self.data_processor.s2p_data_dict['F_npil_corr_dff']) * 1.1])
+
+                ax[idx].set_xlabel('Time (s)', fontsize=16)
+                ax[idx].yaxis.set_label_coords(-0.06, 1) 
+                fig.text(0.05, 0.5, 'Fluorescence Level', va='center', rotation='vertical', fontsize=16)
+
+                return plt
+            else:
+                fig, ax = plt.subplots(figsize=(9, 2))  # You can adjust the figsize as needed
+    
+                to_plot = self.data_processor.s2p_data_dict['F_npil_corr_dff'][self.data_processor.plot_vars['rois_to_tseries'][0]]
                 tvec = np.linspace(0, to_plot.shape[0] / self.data_processor.s2p_data_dict['ops']['fs'], to_plot.shape[0])
-                ax[idx].plot(tvec, np.transpose(to_plot), color=self.data_processor.plot_vars['colors_roi_name'][idx])
+                ax.plot(tvec, np.transpose(to_plot), color=self.data_processor.plot_vars['colors_roi_name'][0])
 
-                ax[idx].set_title(f"ROI {self.data_processor.plot_vars['rois_to_tseries'][idx]}")
-                ax[idx].tick_params(axis='both', which='major', labelsize=13)
-                ax[idx].tick_params(axis='both', which='minor', labelsize=13)
-                if idx == np.ceil(self.data_processor.plot_vars['num_rois_to_tseries'] / 2 - 1):
-                    ax[idx].set_ylabel('Fluorescence Level', fontsize=20)
+                ax.set_title(f"ROI {self.data_processor.plot_vars['rois_to_tseries'][0]}", fontsize=16)
+                ax.tick_params(axis='both', which='major', labelsize=13)
+                ax.tick_params(axis='both', which='minor', labelsize=13)
 
-            plt.subplots_adjust(hspace=0.5)
-            plt.setp(ax, xlim=None, ylim=[np.min(self.data_processor.s2p_data_dict['F_npil_corr_dff']) * 1.1,
-                                            np.max(self.data_processor.s2p_data_dict['F_npil_corr_dff']) * 1.1])
+                ax.set_xlabel('Time (s)', fontsize=16)
+                ax.set_ylabel('Fluorescence Level', fontsize=16, fontweight='500')
 
-            ax[idx].set_xlabel('Time (s)', fontsize=20)
+                if self.data_processor.path_dict['tseries_start_end']:
+                    ax.set_xlim(self.data_processor.path_dict['tseries_start_end'][0], self.data_processor.path_dict['tseries_start_end'][1])
 
-            return plt
+                plt.setp(ax, xlim=None, ylim=[np.min(self.data_processor.s2p_data_dict['F_npil_corr_dff']) * 1.1, np.max(self.data_processor.s2p_data_dict['F_npil_corr_dff']) * 1.1])
+
+                return plt
         else:
             tvec, trace_data_selected = self.data_processor.generate_tsv_and_trace()
 
@@ -224,9 +245,13 @@ class S2PActivityPlot:
             cbar.set_label('Fluorescence (dF/F)')
 
             # Set labels and title
-            ax.set_xlabel("Time (s)")
-            ax.set_ylabel("ROI")
-            ax.set_title("Heatmap of Fluorescence Activity")
+            ax.set_xlabel("Time (s)", fontsize=16)
+            ax.set_ylabel("ROI", fontsize=16)
+
+            ax.set_yticks(self.data_processor.rois_to_plot)
+            ax.set_yticklabels(self.data_processor.rois_to_plot)
+
+            ax.set_title("Heatmap of Fluorescence Activity", fontsize=16)
 
             return plt
         else:
