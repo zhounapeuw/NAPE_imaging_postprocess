@@ -347,11 +347,16 @@ class EventRelAnalysisPlot:
         # set imshow extent to replace x and y axis ticks/labels
         plot_extent = [tvec[0], tvec[-1], data_in.shape[0], 0] # [x min, x max, y min, ymax]
 
+        if len(self.data_processor.conditions) > 1:
+            axes = self.ax[subplot_index]
+        else:
+            axes = self.ax
+
         # prep labels; plot x and y labels for first subplot
         if subplot_index == (0, 0) or subplot_index == 0 :
-            self.ax[subplot_index].set_ylabel('Trial')
-            self.ax[subplot_index].set_xlabel('Time [s]');
-        self.ax[subplot_index].tick_params(axis = 'both', which = 'major')
+            axes.set_ylabel('Trial')
+            axes.set_xlabel('Time [s]');
+        axes.tick_params(axis = 'both', which = 'major')
 
         # prep the data
         to_plot = np.squeeze(data_in)
@@ -359,16 +364,16 @@ class EventRelAnalysisPlot:
             to_plot = to_plot[np.newaxis, :]
 
         # plot the data
-        im = misc.subplot_heatmap(self.ax[subplot_index], title, to_plot, cmap=cmap_, clims=clims, extent_=plot_extent)
+        im = misc.subplot_heatmap(axes, title, to_plot, cmap=cmap_, clims=clims, extent_=plot_extent)
 
         # add meta data lines
-        self.ax[subplot_index].axvline(0, color='0.5', alpha=1) # plot vertical line for time zero
+        axes.axvline(0, color='0.5', alpha=1) # plot vertical line for time zero
         # plots green horizontal line indicating event duration
-        self.ax[subplot_index].annotate('', xy=(event_bound_ratio[0], -0.01), xycoords='axes fraction', 
+        axes.annotate('', xy=(event_bound_ratio[0], -0.01), xycoords='axes fraction', 
                                 xytext=(event_bound_ratio[1], -0.01), 
                                 arrowprops=dict(arrowstyle="-", color='g'))
 
-        cbar = self.fig.colorbar(im, ax = self.ax[subplot_index], shrink = 0.5)
+        cbar = self.fig.colorbar(im, ax = axes, shrink = 0.5)
         cbar.ax.set_ylabel(self.data_processor.fparams["ylabel"])
     
     def sort_heatmap_peaks(self, data, tvec, sort_epoch_start_time, sort_epoch_end_time, sort_method = 'peak_time'):
@@ -435,8 +440,9 @@ class EventRelAnalysisPlot:
         cbar.ax.set_ylabel(self.data_processor.fparams["ylabel"], fontsize=13)
         
         # hide empty subplot
-        for a in ax.flat[num_subplots:]:
-            a.axis('off')
+        if len(self.data_processor.conditions) > 1:
+            for a in ax.flat[num_subplots:]:
+                a.axis('off')
         
         return fig
     
