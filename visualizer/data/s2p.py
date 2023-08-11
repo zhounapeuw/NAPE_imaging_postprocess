@@ -7,7 +7,7 @@ import random
 import os 
 import pandas as pd
 
-class S2PActivityProcessor:
+class ROITraceProcessor:
     def __init__(self, tseries_start_end, show_labels, color_all_rois, rois_to_plot):
         self.tseries_start_end = tseries_start_end
         self.show_labels = show_labels

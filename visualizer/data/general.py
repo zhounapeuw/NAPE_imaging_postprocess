@@ -44,7 +44,7 @@ class BaseGeneralProcesser:
         self.load_signal_data()
         self.load_behav_data()
 
-class EventTicksProcessor(BaseGeneralProcesser):
+class WholeSessionProcessor(BaseGeneralProcesser):
     def __init__(self, fs, opto_blank_frame, num_rois, selected_conditions, flag_normalization, signals_content, events_content, estimmed_frames=None, cond_colors=['steelblue', 'crimson', 'orchid', 'gold']):
         super().__init__(signals_content, events_content)
 
@@ -108,7 +108,7 @@ class EventTicksProcessor(BaseGeneralProcesser):
     def generate_all_data(self):
         super().generate_all_data()
 
-class EventAnalysisProcessor(BaseGeneralProcesser):
+class EventRelAnalysisProcessor(BaseGeneralProcesser):
     def __init__(self, fparams, signals_content, events_content):
         super().__init__(signals_content, events_content)
 

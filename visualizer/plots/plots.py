@@ -6,8 +6,10 @@ import plotly.express as px
 import plotly.graph_objects as go
 from visualizer import misc
 import os
+from plotly.subplots import make_subplots
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-class EventTicksPlot:
+class WholeSessionPlot:
     def __init__(self, data_processor):
         self.data_processor = data_processor
         self.fig = go.Figure()
@@ -83,7 +85,7 @@ class EventTicksPlot:
         self.fig.data[0].visible = True
         return self.fig
     
-class S2PActivityPlot:
+class S2PROITracePlot:
     def __init__(self, data_processor):
         self.data_processor = data_processor
 
@@ -223,7 +225,7 @@ class S2PActivityPlot:
 
             # Update layout
             fig.update_layout(
-                margin=dict(l=20, b=10, t=30),
+                margin=dict(l=30, b=10, t=30),
                 xaxis_title="Time (s)",
                 yaxis_title="Fluorescence Level",
                 showlegend=True,
@@ -236,38 +238,63 @@ class S2PActivityPlot:
         tvec, trace_data_selected = self.data_processor.generate_tsv_and_trace()
 
         if package == "matplotlib":
-            # Create the heatmap plot
-            fig, ax = plt.subplots(figsize=(10, 6))
-            heatmap = ax.imshow(trace_data_selected, extent=[tvec[0], tvec[-1], self.data_processor.plot_vars['cell_ids'][0], self.data_processor.plot_vars['cell_ids'][-1]], aspect='auto', cmap='viridis')
+            cell_ids = self.data_processor.plot_vars['rois_to_tseries']
 
-            # Add colorbar
-            cbar = plt.colorbar(heatmap)
-            cbar.set_label('Fluorescence (dF/F)')
+            # Determine the color scale range
+            min_value = np.min([np.min(trace) for trace in trace_data_selected])
+            max_value = np.max([np.max(trace) for trace in trace_data_selected])
 
-            # Set labels and title
-            ax.set_xlabel("Time (s)", fontsize=16)
-            ax.set_ylabel("ROI", fontsize=16)
+            # Create subplots
+            fig, axs = plt.subplots(len(cell_ids), 1, sharex=True, sharey=True, figsize=(8, len(cell_ids) * 3))
 
-            ax.set_yticks(self.data_processor.rois_to_plot)
-            ax.set_yticklabels(self.data_processor.rois_to_plot)
+            # Loop through cell IDs and add heatmaps to subplots
+            for i, cell_id in enumerate(cell_ids):
+                heatmap = axs[i].imshow([trace_data_selected[i]], extent=(tvec[0], tvec[-1], 0, 1), aspect='auto', cmap='viridis', vmin=min_value, vmax=max_value)
+                axs[i].set_title(f"ROI {cell_id}")
+                axs[i].yaxis.set_visible(False)
 
-            ax.set_title("Heatmap of Fluorescence Activity", fontsize=16)
+                if i == len(cell_ids) - 1:
+                    axs[i].set_xlabel("Time (s)")
 
+                divider = make_axes_locatable(axs[i])
+                cax = divider.append_axes("right", size="5%", pad=0.05)
+                plt.colorbar(heatmap, cax=cax)
+
+            plt.subplots_adjust(hspace=0.2)
             return plt
         else:
-            trace = go.Heatmap(z=trace_data_selected, x=tvec, y=self.data_processor.plot_vars['cell_ids'])
-            fig = go.Figure(data=trace)
+            cell_ids = self.data_processor.plot_vars['rois_to_tseries']
 
+            # Determine the color scale range
+            min_value = min([min(trace) for trace in trace_data_selected])
+            max_value = max([max(trace) for trace in trace_data_selected])
+
+            # Create subplots with shared x and y axes
+            fig = make_subplots(rows=len(cell_ids), cols=1, shared_xaxes=True, shared_yaxes=True, vertical_spacing=0)
+
+            # Loop through cell IDs and add heatmaps to subplots
+            for i, cell_id in enumerate(cell_ids):
+                trace = go.Heatmap(z=[trace_data_selected[i]], x=tvec, y=[cell_id], zmin=min_value, zmax=max_value)
+                fig.add_trace(trace, row=i+1, col=1)
+                yaxis_title = f"ROI {cell_id}"
+                fig.update_yaxes(title_text=yaxis_title, row=i+1, col=1, showticklabels=False, title_standoff=0)
+
+            # Update layout for the subplots
             fig.update_layout(
-                margin=dict(l=60, b=50, t=40),
-                xaxis_title="Time (s)",
-                yaxis_title="ROI",
+                margin=dict(l=30, b=20, t=40, r=5),
                 font=dict(family="Arial", size=15)
             )
 
+            # Set x-axis title for the last subplot
+            last_subplot_index = len(cell_ids)
+            fig.update_xaxes(title_text='Time(s)', row=last_subplot_index, col=1)
+
+            # Update color bar for the last subplot
+            fig.update_coloraxes(colorbar=dict(y=0.5))
+
             return fig
 
-class EventAnalysisPlot:
+class EventRelAnalysisPlot:
     def __init__(self, data_processor):
         self.data_processor = data_processor
     
