@@ -7,3 +7,5 @@ __pycache__/
 *$py.class
 
 *.pyc 
+examples/sample_data/
+napeca_post/sample_data/
