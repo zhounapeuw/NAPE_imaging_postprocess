@@ -752,33 +752,64 @@ class EventClusterPlot:
 
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
         cbar = fig.colorbar(im, ax = axs, shrink = 0.7)
-        cbar.ax.set_ylabel('Heatmap Z-Score Activity', fontsize=13);
+        cbar.ax.set_ylabel('Heatmap Z-Score Activity', fontsize=13)
         
         return fig
     
-    def generate_scree_plot(self):
-        print(f'Number of PCs to keep = {self.data_processer.num_retained_pcs}')
+    def generate_scree_plot(self, package="matplotlib"):
+        if package == "matplotlib":
+            print(f'Number of PCs to keep = {self.data_processer.num_retained_pcs}')
 
-        # plot PCA plot
-        fig, ax = plt.subplots(figsize=(2,2))
-        ax.plot(np.arange(self.data_processer.pca.explained_variance_ratio_.shape[0]).astype(int)+1, self.data_processer.x, 'k')
-        ax.set_ylabel('Percentage of\nvariance explained')
-        ax.set_xlabel('PC number')
-        ax.axvline(self.data_processer.num_retained_pcs, linestyle='--', color='k', linewidth=0.5)
-        ax.set_title('Scree plot')
-        [i.set_linewidth(0.5) for i in ax.spines.values()]
-        ax.spines['right'].set_visible(False)
-        ax.spines['top'].set_visible(False)
+            fig, ax = plt.subplots(figsize=(2,2))
+            ax.plot(np.arange(self.data_processer.pca.explained_variance_ratio_.shape[0]).astype(int)+1, self.data_processer.x, 'k')
+            ax.set_ylabel('Percentage of\nvariance explained')
+            ax.set_xlabel('PC number')
+            ax.axvline(self.data_processer.num_retained_pcs, linestyle='--', color='k', linewidth=0.5)
+            ax.set_title('Scree plot')
+            [i.set_linewidth(0.5) for i in ax.spines.values()]
+            ax.spines['right'].set_visible(False)
+            ax.spines['top'].set_visible(False)
 
-        fig.subplots_adjust(left=0.3)
-        fig.subplots_adjust(right=0.98)
-        fig.subplots_adjust(bottom=0.25)
-        fig.subplots_adjust(top=0.9)
+            fig.subplots_adjust(left=0.3)
+            fig.subplots_adjust(right=0.98)
+            fig.subplots_adjust(bottom=0.25)
+            fig.subplots_adjust(top=0.9)
+        else:
+            print(f'Number of PCs to keep = {self.data_processer.num_retained_pcs}')
+
+            # Create a subplot
+            fig = make_subplots(rows=1, cols=1)
+
+            # Create a line plot for the scree plot
+            scree_trace = go.Scatter(x=np.arange(self.data_processer.pca.explained_variance_ratio_.shape[0]) + 1,
+                                    y=self.data_processer.x,
+                                    mode='lines',
+                                    line=dict(color='black'))
+
+            # Add vertical dashed line at the specified number of retained PCs
+            retained_pcs_line = go.Scatter(x=[self.data_processer.num_retained_pcs, self.data_processer.num_retained_pcs],
+                                        y=[0, self.data_processer.x.max()],
+                                        mode='lines',
+                                        line=dict(color='black', dash='dash'))
+
+            # Update layout
+            fig.update_layout(
+                title='Scree plot',
+                xaxis_title='PC number',
+                yaxis_title='Percentage of variance explained',
+                title_x=0.5,
+                showlegend=False,
+                xaxis=dict(tickmode='linear'),
+                margin=dict(l=50, r=20, t=50, b=50)
+            )
+
+            # Add traces to the figure
+            fig.add_trace(scree_trace)
+            fig.add_trace(retained_pcs_line)
         
         return fig
 
     def generate_pca_plot(self):
-        ### plot retained principal components
         numcols = 2.0
         fig, axs = plt.subplots(int(np.ceil(self.data_processer.num_retained_pcs/numcols)), int(numcols), sharey='all',
                                 figsize=(2.2*numcols, 2.2*int(np.ceil(self.data_processer.num_retained_pcs/numcols))))
