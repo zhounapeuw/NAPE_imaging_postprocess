@@ -9,6 +9,12 @@ import os
 from plotly.subplots import make_subplots
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+from sklearn.metrics import silhouette_score, silhouette_samples
+from sklearn.manifold import TSNE
+import statsmodels.api as sm
+from statsmodels.distributions.empirical_distribution import ECDF
+import seaborn as sns
+
 class WholeSessionPlot:
     def __init__(self, data_processor):
         self.data_processor = data_processor
@@ -605,3 +611,322 @@ class EventRelAnalysisPlot:
         })
 
         return all_plots
+
+class EventClusterPlot:
+    def __init__(self, data_processer):
+        self.data_processer = data_processer
+    
+    def standardize_plot_graphics(self, ax):
+        """
+        Standardize plots
+        """
+        [i.set_linewidth(0.5) for i in ax.spines.itervalues()] # change the width of spines for both axis
+        ax.spines['right'].set_visible(False) # remove top the right axis
+        ax.spines['top'].set_visible(False)
+        return ax
+
+    def fit_regression(self, x, y):
+        """
+        Fit a linear regression with ordinary least squares
+        """
+        lm = sm.OLS(y, sm.add_constant(x)).fit() # add a column of 1s for intercept before fitting
+        x_range = sm.add_constant(np.array([x.min(), x.max()]))
+        x_range_pred = lm.predict(x_range)
+        return lm.pvalues[1], lm.params[1], x_range[:,1], x_range_pred, lm.rsquared
+
+    def CDFplot(self, x, ax, **kwargs):
+        """
+        Create a cumulative distribution function (CDF) plot
+        """
+        x = np.array(x)
+        ix= np.argsort(x)
+        ax.plot(x[ix], ECDF(x)(x)[ix], **kwargs)
+        return ax
+
+    def fit_regression_and_plot(self, x, y, ax, plot_label='', color='k', linecolor='r', markersize=3, show_pval=True):
+        """
+        Fit a linear regression model with ordinary least squares and visualize the results
+        """
+        #linetype is a string like 'bo'
+        pvalue, slope, temp, temppred, R2 = self.fit_regression(x, y)   
+        if show_pval:
+            plot_label = '%s p=%.2e\nr=%.3f'% (plot_label, pvalue, np.sign(slope)*np.sqrt(R2))
+        else:
+            plot_label = '%s r=%.3f'% (plot_label, np.sign(slope)*np.sqrt(R2))
+        ax.scatter(x, y, color=color, label=plot_label, s=markersize)
+        ax.plot(temp, temppred, color=linecolor)
+        return ax, slope, pvalue, R2
+
+    def make_silhouette_plot(self, X, cluster_labels):
+
+        """
+        Create silhouette plot for the clusters
+        """
+        
+        n_clusters = len(set(cluster_labels))
+        
+        fig, ax = plt.subplots(1, 1)
+        fig.set_size_inches(4, 4)
+
+        # The 1st subplot is the silhouette plot
+        # The silhouette coefficient can range from -1, 1 but in this example all
+        # lie within [-0.1, 1]
+        ax.set_xlim([-0.4, 1])
+        # The (n_clusters+1)*10 is for inserting blank space between silhouette
+        # plots of individual clusters, to demarcate them clearly.
+        ax.set_ylim([0, len(X) + (n_clusters + 1) * 10])
+        silhouette_avg = silhouette_score(X, cluster_labels, metric='cosine')
+
+        # Compute the silhouette scores for each sample
+        sample_silhouette_values = silhouette_samples(X, cluster_labels, metric='cosine')
+
+        y_lower = 10
+        for i in range(n_clusters):
+            # Aggregate the silhouette scores for samples belonging to
+            # cluster i, and sort them
+            ith_cluster_silhouette_values = \
+                sample_silhouette_values[cluster_labels == i]
+
+            ith_cluster_silhouette_values.sort()
+
+            size_cluster_i = ith_cluster_silhouette_values.shape[0]
+            y_upper = y_lower + size_cluster_i
+
+            color = self.data_processer.colors_for_cluster[i]
+            ax.fill_betweenx(np.arange(y_lower, y_upper),
+                            0, ith_cluster_silhouette_values,
+                            facecolor=color, edgecolor=color, alpha=0.9)
+
+            # Label the silhouette plots with their cluster numbers at the middle
+            ax.text(-0.05, y_lower + 0.5 * size_cluster_i, str(i+1))
+
+            # Compute the new y_lower for next plot
+            y_lower = y_upper + 10  # 10 for the 0 samples
+
+        ax.set_title("The silhouette plot for the various clusters.")
+        ax.set_xlabel("The silhouette coefficient values")
+        ax.set_ylabel("Cluster label")
+
+        # The vertical line for average silhouette score of all the values
+        ax.axvline(x=silhouette_avg, color="red", linestyle="--")
+
+        ax.set_yticks([])  # Clear the yaxis labels / ticks
+        ax.set_xticks([-0.4, -0.2, 0, 0.2, 0.4, 0.6, 0.8, 1])
+
+    def generate_heatmap_zscore(self):
+        fig, axs = plt.subplots(2,self.data_processer.num_conditions,figsize=(3*2,3*2), sharex='all', sharey='row')
+
+        # loop through conditions and plot heatmaps of trial-avged activity
+        for t in range(self.data_processer.num_conditions):
+            if self.data_processer.num_conditions == 1:
+                ax = axs[0]
+            else:
+                ax = axs[0,t]
+
+            plot_extent = [self.data_processer.tvec[0], self.data_processer.tvec[-1], self.data_processer.populationdata.shape[0], 0 ] # set plot limits as [time_start, time_end, num_rois, 0]
+            im = misc.subplot_heatmap(ax, ' ', self.data_processer.populationdata[self.data_processer.sortresponse, t*self.data_processer.window_size: (t+1)*self.data_processer.window_size], 
+                                    clims = [-self.data_processer.cmax, self.data_processer.cmax], extent_=plot_extent)
+            ax.set_title(self.data_processer.conditions[t])
+            
+            ax.axvline(0, linestyle='--', color='k', linewidth=0.5)   
+            if self.data_processer.flag_plot_reward_line:
+                ax.axvline(self.data_processer.second_event_seconds, linestyle='--', color='k', linewidth=0.5) 
+            
+            ### roi-avg tseries 
+            if self.data_processer.num_conditions == 1:
+                ax = axs[1]
+            else:
+                ax = axs[1,t]
+            mean_ts = np.mean(self.data_processer.populationdata[self.data_processer.sortresponse, t*self.data_processer.window_size:(t+1)*self.data_processer.window_size], axis=0)
+            stderr_ts = np.std(self.data_processer.populationdata[self.data_processer.sortresponse, t*self.data_processer.window_size:(t+1)*self.data_processer.window_size], axis=0)/np.sqrt(self.data_processer.populationdata.shape[0])
+            ax.plot(self.data_processer.tvec, mean_ts)
+            shade = ax.fill_between(self.data_processer.tvec, mean_ts - stderr_ts, mean_ts + stderr_ts, alpha=0.2) # this plots the shaded error bar
+            ax.axvline(0, linestyle='--', color='k', linewidth=0.5)  
+            if self.data_processer.flag_plot_reward_line:
+                ax.axvline(self.data_processer.second_event_seconds, linestyle='--', color='k', linewidth=0.5)   
+            ax.set_xlabel('Time from event (s)')   
+        
+            if t==0:
+                ax.set_ylabel('Neurons')
+                ax.set_ylabel('Mean norm. fluor.')
+
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+        cbar = fig.colorbar(im, ax = axs, shrink = 0.7)
+        cbar.ax.set_ylabel('Heatmap Z-Score Activity', fontsize=13);
+        
+        return fig
+    
+    def generate_scree_plot(self):
+        print(f'Number of PCs to keep = {self.data_processer.num_retained_pcs}')
+
+        # plot PCA plot
+        fig, ax = plt.subplots(figsize=(2,2))
+        ax.plot(np.arange(self.data_processer.pca.explained_variance_ratio_.shape[0]).astype(int)+1, self.data_processer.x, 'k')
+        ax.set_ylabel('Percentage of\nvariance explained')
+        ax.set_xlabel('PC number')
+        ax.axvline(self.data_processer.num_retained_pcs, linestyle='--', color='k', linewidth=0.5)
+        ax.set_title('Scree plot')
+        [i.set_linewidth(0.5) for i in ax.spines.values()]
+        ax.spines['right'].set_visible(False)
+        ax.spines['top'].set_visible(False)
+
+        fig.subplots_adjust(left=0.3)
+        fig.subplots_adjust(right=0.98)
+        fig.subplots_adjust(bottom=0.25)
+        fig.subplots_adjust(top=0.9)
+        
+        return fig
+
+    def generate_pca_plot(self):
+        ### plot retained principal components
+        numcols = 2.0
+        fig, axs = plt.subplots(int(np.ceil(self.data_processer.num_retained_pcs/numcols)), int(numcols), sharey='all',
+                                figsize=(2.2*numcols, 2.2*int(np.ceil(self.data_processer.num_retained_pcs/numcols))))
+        for pc in range(self.data_processer.num_retained_pcs):
+            ax = axs.flat[pc]
+            for k, tempkey in enumerate(self.data_processer.conditions):
+                ax.plot(self.data_processer.tvec, self.data_processer.pca_vectors[pc, k*self.data_processer.window_size:(k+1)*self.data_processer.window_size],
+                        label='PC %d: %s'%(pc+1, tempkey))
+
+            ax.axvline(0, linestyle='--', color='k', linewidth=1)
+            ax.set_title(f'PC {pc+1}')
+
+            # labels
+            if pc == 0:
+                ax.set_xlabel('Time from cue (s)')
+                ax.set_ylabel( 'PCA weights')
+
+
+        fig.tight_layout()
+        for ax in axs.flat[self.data_processer.num_retained_pcs:]:
+            ax.set_visible(False)
+
+        plt.tight_layout()
+        
+        return fig
+    
+    def generate_cluster_condition_plots(self):
+
+        fig, axs = plt.subplots(len(self.data_processer.conditions),len(self.data_processer.uniquelabels),
+                                figsize=(2*len(self.data_processer.uniquelabels),2*len(self.data_processer.conditions)))
+        if len(axs.shape) == 1:
+            axs = np.expand_dims(axs, axis=0)
+
+        for c, cluster in enumerate(self.data_processer.uniquelabels):
+            for k, tempkey in enumerate(self.data_processer.conditions):
+                temp = self.data_processer.populationdata[np.where(self.data_processer.newlabels==cluster)[0], k*self.data_processer.window_size:(k+1)*self.data_processer.window_size]
+                self.data_processer.numroisincluster[c] = temp.shape[0]
+                ax=axs[k, cluster]
+                sortresponse = np.argsort(np.mean(temp[:,self.data_processer.sortwindow[0]:self.data_processer.sortwindow[1]], axis=1))[::-1]
+                
+                plot_extent = [self.data_processer.tvec[0], self.data_processer.tvec[-1], len(sortresponse), 0 ]
+                im = misc.subplot_heatmap(ax, ' ', temp[sortresponse], 
+                                        clims = [-self.data_processer.cmax*self.data_processer.heatmap_cmap_scaling, self.data_processer.cmax*self.data_processer.heatmap_cmap_scaling], extent_=plot_extent)
+
+                axs[k, cluster].grid(False) 
+                if k!=len(self.data_processer.conditions)-1:
+
+                    axs[k, cluster].set_xticks([])
+
+                axs[k, cluster].set_yticks([])
+                axs[k, cluster].axvline(0, linestyle='--', color='k', linewidth=0.5)
+                if self.data_processer.flag_plot_reward_line:
+                    axs[k, cluster].axvline(self.data_processer.second_event_seconds, linestyle='--', color='k', linewidth=0.5)
+                if cluster==0:
+                    axs[k, 0].set_ylabel('%s'%(tempkey))
+            axs[0, cluster].set_title('Cluster %d\n(n=%d)'%(cluster+1, self.data_processer.numroisincluster[c]))
+            
+        fig.text(0.5, 0.05, 'Time from cue (s)', fontsize=12,
+                horizontalalignment='center', verticalalignment='center', rotation='horizontal')
+        fig.tight_layout()
+
+        fig.subplots_adjust(wspace=0.1, hspace=0.1)
+        fig.subplots_adjust(left=0.03)
+        fig.subplots_adjust(right=0.93)
+        fig.subplots_adjust(bottom=0.2)
+        fig.subplots_adjust(top=0.83)                                    
+
+        cbar = fig.colorbar(im, ax = axs, shrink = 0.7)
+        cbar.ax.set_ylabel('Z-Score Activity', fontsize=13)
+
+        return fig
+    
+    def generate_fluorescent_graph(self):
+        # Plot amount of fluorescence normalized for each cluster by conditions over time
+        fig, axs = plt.subplots(1,len(self.data_processer.uniquelabels),
+                                figsize=(3*len(self.data_processer.uniquelabels),1.5*len(self.data_processer.conditions)))
+
+        for c, cluster in enumerate(self.data_processer.uniquelabels):
+
+            for k, tempkey in enumerate(self.data_processer.conditions):
+                temp = self.data_processer.populationdata[np.where(self.data_processer.newlabels==cluster)[0], k*self.data_processer.window_size:(k+1)*self.data_processer.window_size]
+                self.data_processer.numroisincluster[c] = temp.shape[0]
+                sortresponse = np.argsort(np.mean(temp[:,self.data_processer.sortwindow[0]:self.data_processer.sortwindow[1]], axis=1))[::-1]
+                sns.lineplot(x="variable", y="value",data = pd.DataFrame(temp[sortresponse]).rename(columns=self.data_processer.tvec_convert_dict).melt(),
+                            ax = axs[cluster],
+                            palette=plt.get_cmap('coolwarm'),label = tempkey,legend = False)
+                axs[cluster].grid(False)  
+                axs[cluster].axvline(0, linestyle='--', color='k', linewidth=0.5)
+                axs[cluster].spines['right'].set_visible(False)
+                axs[cluster].spines['top'].set_visible(False)
+                if cluster==0:
+                    axs[cluster].set_ylabel('Normalized fluorescence')
+                else:
+                    axs[cluster].set_ylabel('')
+                axs[cluster].set_xlabel('')
+            axs[cluster].set_title('Cluster %d\n(n=%d)'%(cluster+1, self.data_processer.numroisincluster[c]))
+            axs[0].legend()
+        fig.text(0.5, 0.05, 'Time from cue (s)', fontsize=12,
+                horizontalalignment='center', verticalalignment='center', rotation='horizontal')
+        fig.tight_layout()
+
+        fig.subplots_adjust(wspace=0.1, hspace=0.1)
+        fig.subplots_adjust(left=0.03)
+        fig.subplots_adjust(right=0.93)
+        fig.subplots_adjust(bottom=0.2)
+        fig.subplots_adjust(top=0.83)
+        
+        return fig
+
+    def generate_cluster_plot(self):
+        # Perform TSNE on newly defined clusters
+        num_clusterpairs = len(self.data_processer.uniquelabels)*(len(self.data_processer.uniquelabels)-1)/2
+
+        numrows = int(np.ceil(num_clusterpairs**0.5))
+        numcols = int(np.ceil(num_clusterpairs/np.ceil(num_clusterpairs**0.5)))
+        fig, axs = plt.subplots(numrows, numcols, figsize=(3*numrows, 3*numcols))
+
+        tempsum = 0
+        for c1, cluster1 in enumerate(self.data_processer.uniquelabels):
+            for c2, cluster2 in enumerate(self.data_processer.uniquelabels):
+                if cluster1>=cluster2:
+                    continue
+
+                temp1 = self.data_processer.transformed_data[np.where(self.data_processer.newlabels==cluster1)[0], :self.data_processer.num_retained_pcs]
+                temp2 = self.data_processer.transformed_data[np.where(self.data_processer.newlabels==cluster2)[0], :self.data_processer.num_retained_pcs]
+                X = np.concatenate((temp1, temp2), axis=0)
+
+                tsne = TSNE(n_components=2, init='random',
+                            random_state=0, perplexity=np.sqrt(X.shape[0]))
+                Y = tsne.fit_transform(X)
+
+                if numrows*numcols==1:
+                    ax = axs
+                else:
+                    ax = axs[int(tempsum/numcols),
+                            abs(tempsum - int(tempsum/numcols)*numcols)]
+                ax.scatter(Y[:np.sum(self.data_processer.newlabels==cluster1),0],
+                        Y[:np.sum(self.data_processer.newlabels==cluster1),1],
+                        color=self.data_processer.colors_for_cluster[cluster1], label='Cluster %d'%(cluster1+1), alpha=1)
+                ax.scatter(Y[np.sum(self.data_processer.newlabels==cluster1):,0],
+                        Y[np.sum(self.data_processer.newlabels==cluster1):,1],
+                        color=self.data_processer.colors_for_cluster[cluster2+3], label='Cluster %d'%(cluster2+1), alpha=1)
+
+                ax.set_xlabel('tsne dimension 1')
+                ax.set_ylabel('tsne dimension 2')
+                ax.legend()
+                tempsum += 1
+
+                fig.tight_layout()
+        
+        return fig
