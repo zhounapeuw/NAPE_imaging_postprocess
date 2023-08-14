@@ -164,7 +164,7 @@ class EventRelAnalysisProcessor(BaseGeneralProcesser):
         self.trial_preprocessing()
 
 class EventClusterProcessor(BaseGeneralProcesser):
-    def __init__(self, signals_content, events_content, fs, trial_start_end, baseline_end, event_sort_analysis_win, pca_num_pc_method, max_n_clusters, possible_n_nearest_neighbors, selected_conditions, flag_plot_reward_line, second_event_seconds, flag_save_figs, heatmap_cmap_scaling, group_data, group_data_conditions, sortwindow):
+    def __init__(self, signals_content, events_content, fs, trial_start_end, baseline_end, event_sort_analysis_win, pca_num_pc_method, max_n_clusters, possible_n_nearest_neighbors, selected_conditions, flag_plot_reward_line, second_event_seconds, heatmap_cmap_scaling, group_data, group_data_conditions, sortwindow):
         super().__init__(signals_content, events_content)
 
         self.fs = fs 
@@ -177,7 +177,6 @@ class EventClusterProcessor(BaseGeneralProcesser):
         self.selected_conditions = selected_conditions
         self.flag_plot_reward_line = flag_plot_reward_line
         self.second_event_seconds = second_event_seconds
-        self.flag_save_figs = flag_save_figs
         self.heatmap_cmap_scaling = heatmap_cmap_scaling
         self.group_data = group_data
         self.group_data_conditions = group_data_conditions
