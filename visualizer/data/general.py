@@ -183,6 +183,15 @@ class EventClusterProcessor(BaseGeneralProcesser):
         self.group_data_conditions = group_data_conditions
         self.sortwindow = sortwindow
 
+        self.define_params()
+        self.declare_variables()
+    
+    def define_params(self):
+        self.fparams = {}
+        self.fparams['fs'] = self.fs
+        self.fparams['opto_blank_frame'] = False
+        self.fparams['selected_conditions'] = self.selected_conditions
+
     def declare_variables(self):
         super().load_signal_data()
 
@@ -324,10 +333,10 @@ class EventClusterProcessor(BaseGeneralProcesser):
                     silhouette_scores[n_clustersidx, nnidx, modelidx] = silhouette_score(self.transformed_data[:,:self.num_retained_pcs],
                                                                             model.labels_,
                                                                             metric='cosine')
-                    if modelidx == 0:
-                        print(f'Done with numclusters = {n_clusters}, num nearest neighbors = {nn}: score = {silhouette_scores[n_clustersidx, nnidx, modelidx]}.3f')
-                    else:
-                        print(f'Done with numclusters = {n_clusters}, score = {silhouette_scores[n_clustersidx, nnidx, modelidx]}.3f')
+                    #if modelidx == 0:
+                    #    print(f'Done with numclusters = {n_clusters}, num nearest neighbors = {nn}: score = {silhouette_scores[n_clustersidx, nnidx, modelidx]}.3f')
+                    #else:
+                    #    print(f'Done with numclusters = {n_clusters}, score = {silhouette_scores[n_clustersidx, nnidx, modelidx]}.3f')
         print(silhouette_scores.shape)
         print('Done with model fitting')
 
@@ -389,7 +398,6 @@ class EventClusterProcessor(BaseGeneralProcesser):
         self.colors_for_cluster = plt.cm.viridis(np.linspace(0,1,len(self.uniquelabels)+3))
     
     def generate_all_data(self):
-        self.declare_variables()
         self.calculate_pca()
         self.calculate_optimum_clusters()
         self.cluster_with_optimal_params()

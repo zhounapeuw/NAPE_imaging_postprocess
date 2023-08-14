@@ -1,1 +1,1 @@
-from .plots import WholeSessionPlot, S2PROITracePlot, EventRelAnalysisPlot
+from .plots import WholeSessionPlot, S2PROITracePlot, EventRelAnalysisPlot, EventClusterPlot
