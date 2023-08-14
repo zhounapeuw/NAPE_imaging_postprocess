@@ -78,5 +78,6 @@
 ## Authors
 
 * **Zhe Charles Zhou** - *Initial and ongoing work; Director* - [Zhou NAPE UW](https://github.com/zhounapeuw)
+* **Alex de Lecea** - Code streamlining - [Alex de Lecea](https://github.com/Alex-de-Lecea)
 * **Eesha Jain** - Website design and development; code optimization and streamlining - [Eesha Jain](https://github.com/Eesha-Jain)
 * **Lauren Ran Liao** - *Machine Learning Development* - [Lauren Liao](https://github.com/lr5029)
