@@ -9,9 +9,10 @@ from sklearn.metrics import silhouette_score
 from sklearn.cluster import SpectralClustering, KMeans
 
 class BaseGeneralProcesser:
-    def __init__(self, signals_content, events_content):
+    def __init__(self, signals_content, events_content, file_extension):
         self.signals_content = signals_content
         self.events_content = events_content
+        self.file_extension = file_extension
     
     def generate_reference_samples(self):
         ### create variables that reference samples and times for slicing and plotting the data
@@ -33,7 +34,7 @@ class BaseGeneralProcesser:
         self.tvec = np.round(np.linspace(self.trial_start_end_sec[0], self.trial_start_end_sec[1], self.num_samples_trial+1), 2)
     
     def load_signal_data(self):
-        self.signals = misc.load_signals(self.signals_content)
+        self.signals = misc.load_signals(self.signals_content, self.file_extension[0])
         
         # if opto stim frames were detected in preprocessing, set these frames to be NaN (b/c of stim artifact)
         if self.fparams['opto_blank_frame']:
@@ -49,7 +50,7 @@ class BaseGeneralProcesser:
 
     def load_behav_data(self):
         if self.events_content:
-            self.event_times = misc.df_to_dict(self.events_content)
+            self.event_times = misc.df_to_dict(self.events_content, self.file_extension[1])
             self.event_frames = misc.dict_time_to_samples(self.event_times, self.fparams['fs'])
 
             self.event_times = {}
@@ -75,8 +76,8 @@ class BaseGeneralProcesser:
         self.load_behav_data()
 
 class WholeSessionProcessor(BaseGeneralProcesser):
-    def __init__(self, fs, opto_blank_frame, num_rois, selected_conditions, flag_normalization, signals_content, events_content, estimmed_frames=None, cond_colors=['steelblue', 'crimson', 'orchid', 'gold']):
-        super().__init__(signals_content, events_content)
+    def __init__(self, fs, opto_blank_frame, num_rois, selected_conditions, flag_normalization, signals_content, events_content, estimmed_frames=None, cond_colors=['steelblue', 'crimson', 'orchid', 'gold'], file_extension=[".csv", ".csv"]):
+        super().__init__(signals_content, events_content, file_extension)
 
         self.signal_to_plot = None
         self.min_max = None
@@ -139,9 +140,8 @@ class WholeSessionProcessor(BaseGeneralProcesser):
         super().generate_all_data()
 
 class EventRelAnalysisProcessor(BaseGeneralProcesser):
-    def __init__(self, fparams, signals_content, events_content):
-        super().__init__(signals_content, events_content)
-
+    def __init__(self, fparams, signals_content, events_content, file_extension=[".csv", ".csv"]):
+        super().__init__(signals_content, events_content, file_extension)
         self.fparams = fparams
     
     def subplot_loc(self, idx, num_rows, num_col):
@@ -181,8 +181,8 @@ class EventRelAnalysisProcessor(BaseGeneralProcesser):
         super().trial_preprocessing()
 
 class EventClusterProcessor(BaseGeneralProcesser):
-    def __init__(self, signals_content, events_content, fs, trial_start_end, baseline_end, event_sort_analysis_win, pca_num_pc_method, max_n_clusters, possible_n_nearest_neighbors, selected_conditions, flag_plot_reward_line, second_event_seconds, heatmap_cmap_scaling, group_data, group_data_conditions, sortwindow):
-        super().__init__(signals_content, events_content)
+    def __init__(self, signals_content, events_content, fs, trial_start_end, baseline_end, event_sort_analysis_win, pca_num_pc_method, max_n_clusters, possible_n_nearest_neighbors, selected_conditions, flag_plot_reward_line, second_event_seconds, heatmap_cmap_scaling, group_data, group_data_conditions, sortwindow, file_extension=[".csv", ".csv"]):
+        super().__init__(signals_content, events_content, file_extension)
 
         self.fs = fs 
         self.trial_start_end = trial_start_end
