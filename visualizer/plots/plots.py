@@ -299,7 +299,7 @@ class S2PROITracePlot:
             fig.update_coloraxes(colorbar=dict(y=0.5))
 
             return fig
-
+    
 class EventRelAnalysisPlot:
     def __init__(self, data_processor):
         self.data_processor = data_processor
@@ -800,7 +800,8 @@ class EventClusterPlot:
                 title_x=0.5,
                 showlegend=False,
                 xaxis=dict(tickmode='linear'),
-                margin=dict(l=50, r=20, t=50, b=50)
+                margin=dict(l=50, r=20, t=50, b=50),
+                xaxis_range=self.data_processer.trial_start_end
             )
 
             # Add traces to the figure
