@@ -13,6 +13,25 @@ class BaseGeneralProcesser:
         self.signals_content = signals_content
         self.events_content = events_content
     
+    def generate_reference_samples(self):
+        ### create variables that reference samples and times for slicing and plotting the data
+
+        self.trial_start_end_sec = np.array(self.fparams['trial_start_end']) # trial windowing in seconds relative to ttl-onset/trial-onset, in seconds
+        self.baseline_start_end_sec = np.array([self.trial_start_end_sec[0], self.fparams['baseline_end']])
+
+        #baseline period
+        self.baseline_begEnd_samp = self.baseline_start_end_sec*self.fparams['fs']
+        self.baseline_svec = (np.arange(self.baseline_begEnd_samp[0], self.baseline_begEnd_samp[1]+1, 1) - self.baseline_begEnd_samp[0]).astype('int')
+
+        # convert times to samples and get sample vector for the trial 
+        self.trial_begEnd_samp = self.trial_start_end_sec*self.fparams['fs'] # turn trial start/end times to samples
+        self.trial_svec = np.arange(self.trial_begEnd_samp[0], self.trial_begEnd_samp[1])
+
+    def calculate_trial_timing(self):
+        # calculate time vector for plot x axes
+        self.num_samples_trial = len( self.trial_svec )
+        self.tvec = np.round(np.linspace(self.trial_start_end_sec[0], self.trial_start_end_sec[1], self.num_samples_trial+1), 2)
+    
     def load_signal_data(self):
         self.signals = misc.load_signals(self.signals_content)
         
@@ -40,6 +59,16 @@ class BaseGeneralProcesser:
                 self.conditions = self.event_frames.keys()
             for cond in self.conditions: # convert event samples to time in seconds
                 self.event_times[cond] = (np.array(self.event_frames[cond])/self.fparams['fs']).astype('int')
+    
+    def trial_preprocessing(self):
+        """
+        MAIN data processing function to extract event-centered data
+
+        extract and save trial data, 
+        saved data are in the event_rel_analysis subfolder, a pickle file that contains the extracted trial data
+        """
+        
+        self.data_dict = misc.extract_trial_data(self.signals, self.tvec, self.trial_begEnd_samp, self.event_frames, self.conditions, baseline_start_end_samp = self.baseline_begEnd_samp)
     
     def generate_all_data(self):
         self.load_signal_data()
@@ -123,21 +152,12 @@ class EventRelAnalysisProcessor(BaseGeneralProcesser):
         return subplot_index
    
     def generate_reference_samples(self):
-        ### create variables that reference samples and times for slicing and plotting the data
+        super().generate_reference_samples()
 
         self.trial_start_end_sec = np.array(self.fparams['trial_start_end']) # trial windowing in seconds relative to ttl-onset/trial-onset, in seconds
         self.baseline_start_end_sec = np.array([self.trial_start_end_sec[0], self.fparams['baseline_end']])
 
-        # convert times to samples and get sample vector for the trial 
-        self.trial_begEnd_samp = self.trial_start_end_sec*self.fparams['fs'] # turn trial start/end times to samples
-        self.trial_svec = np.arange(self.trial_begEnd_samp[0], self.trial_begEnd_samp[1])
-        # and for baseline period
-        self.baseline_begEnd_samp = self.baseline_start_end_sec*self.fparams['fs']
-        self.baseline_svec = (np.arange(self.baseline_begEnd_samp[0], self.baseline_begEnd_samp[1]+1, 1) - self.baseline_begEnd_samp[0]).astype('int')
-
-        # calculate time vector for plot x axes
-        self.num_samples_trial = len( self.trial_svec )
-        self.tvec = np.round(np.linspace(self.trial_start_end_sec[0], self.trial_start_end_sec[1], self.num_samples_trial+1), 2)
+        super().calculate_trial_timing()
 
         # find samples and calculations for time 0 for plotting
         self.t0_sample = misc.get_tvec_sample(self.tvec, 0) # grabs the sample index of a given time from a vector of times
@@ -155,13 +175,10 @@ class EventRelAnalysisProcessor(BaseGeneralProcesser):
             return self.num_rois
         return "Not defined yet: run load_signal_data() first"
     
-    def trial_preprocessing(self):
-        self.data_dict = misc.extract_trial_data(self.signals, self.tvec, self.trial_begEnd_samp, self.event_frames, self.conditions, baseline_start_end_samp = self.baseline_begEnd_samp)
-    
     def generate_all_data(self):
         self.generate_reference_samples()
         super().generate_all_data()
-        self.trial_preprocessing()
+        super().trial_preprocessing()
 
 class EventClusterProcessor(BaseGeneralProcesser):
     def __init__(self, signals_content, events_content, fs, trial_start_end, baseline_end, event_sort_analysis_win, pca_num_pc_method, max_n_clusters, possible_n_nearest_neighbors, selected_conditions, flag_plot_reward_line, second_event_seconds, heatmap_cmap_scaling, group_data, group_data_conditions, sortwindow):
@@ -186,18 +203,20 @@ class EventClusterProcessor(BaseGeneralProcesser):
         self.declare_variables()
     
     def define_params(self):
-        self.fparams = {}
+        self.fparams = {
+            "fs": self.fs,
+            "opto_blank_frame": False,
+            "selected_conditions": self.selected_conditions,
+            "trial_start_end": self.trial_start_end,
+            "baseline_end": self.baseline_end
+        }
         self.fparams['fs'] = self.fs
         self.fparams['opto_blank_frame'] = False
         self.fparams['selected_conditions'] = self.selected_conditions
 
     def declare_variables(self):
         super().load_signal_data()
-
-        self.trial_start_end_sec = np.array(self.trial_start_end) # trial windowing in seconds relative to ttl-onset/trial-onset, in seconds
-        self.baseline_start_end_sec = np.array([self.trial_start_end_sec[0], self.baseline_end])
-        self.baseline_begEnd_samp = self.baseline_start_end_sec*self.fs
-        self.baseline_svec = (np.arange(self.baseline_begEnd_samp[0], self.baseline_begEnd_samp[1] + 1, 1) - self.baseline_begEnd_samp[0]).astype('int')
+        super().generate_reference_samples()
 
         if self.group_data:
             self.conditions = self.group_data_conditions
@@ -225,23 +244,8 @@ class EventClusterProcessor(BaseGeneralProcesser):
             self.num_conditions = len(self.conditions)
 
             ### define trial timing
-
-            # convert times to samples and get sample vector for the trial 
-            self.trial_begEnd_samp = self.trial_start_end_sec*self.fs # turn trial start/end times to samples
-            self.trial_svec = np.arange(self.trial_begEnd_samp[0], self.trial_begEnd_samp[1])
-            # calculate time vector for plot x axes
-            self.num_samples_trial = len( self.trial_svec )
-            self.tvec = np.round(np.linspace(self.trial_start_end_sec[0], self.trial_start_end_sec[1], self.num_samples_trial+1), 2)
-
-
-            """
-            MAIN data processing function to extract event-centered data
-
-            extract and save trial data, 
-            saved data are in the event_rel_analysis subfolder, a pickle file that contains the extracted trial data
-            """
-            self.data_dict = misc.extract_trial_data(self.signals, self.tvec, self.trial_begEnd_samp, self.event_frames, self.conditions, baseline_start_end_samp = self.baseline_begEnd_samp)
-
+            super().calculate_trial_timing()
+            super().trial_preprocessing()
 
             #### concatenate data across trial conditions
 
