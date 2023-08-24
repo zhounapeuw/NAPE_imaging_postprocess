@@ -1,2 +1,2 @@
-from .general import WholeSessionProcessor, EventRelAnalysisProcessor, EventClusterProcessor
+from .general import WholeSessionProcessor, EventRelAnalysisProcessor, EventClusterProcessor, PlotActivityContoursProcesser
 from .s2p import ROITraceProcessor
