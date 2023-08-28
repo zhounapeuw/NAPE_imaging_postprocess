@@ -7,14 +7,36 @@ import os
 from sklearn.decomposition import PCA
 from sklearn.metrics import silhouette_score
 from sklearn.cluster import SpectralClustering, KMeans
+import h5py
+import concurrent.futures
 
 class BaseGeneralProcesser:
-    def __init__(self, signals_content, events_content):
+    def __init__(self, signals_content, events_content, file_extension):
         self.signals_content = signals_content
         self.events_content = events_content
+        self.file_extension = file_extension
+    
+    def generate_reference_samples(self):
+        ### create variables that reference samples and times for slicing and plotting the data
+
+        self.trial_start_end_sec = np.array(self.fparams['trial_start_end']) # trial windowing in seconds relative to ttl-onset/trial-onset, in seconds
+        self.baseline_start_end_sec = np.array([self.trial_start_end_sec[0], self.fparams['baseline_end']])
+
+        #baseline period
+        self.baseline_begEnd_samp = self.baseline_start_end_sec*self.fparams['fs']
+        self.baseline_svec = (np.arange(self.baseline_begEnd_samp[0], self.baseline_begEnd_samp[1]+1, 1) - self.baseline_begEnd_samp[0]).astype('int')
+
+        # convert times to samples and get sample vector for the trial 
+        self.trial_begEnd_samp = self.trial_start_end_sec*self.fparams['fs'] # turn trial start/end times to samples
+        self.trial_svec = np.arange(self.trial_begEnd_samp[0], self.trial_begEnd_samp[1])
+
+    def calculate_trial_timing(self):
+        # calculate time vector for plot x axes
+        self.num_samples_trial = len( self.trial_svec )
+        self.tvec = np.round(np.linspace(self.trial_start_end_sec[0], self.trial_start_end_sec[1], self.num_samples_trial+1), 2)
     
     def load_signal_data(self):
-        self.signals = misc.load_signals(self.signals_content)
+        self.signals = misc.load_signals(self.signals_content, self.file_extension[0])
         
         # if opto stim frames were detected in preprocessing, set these frames to be NaN (b/c of stim artifact)
         if self.fparams['opto_blank_frame']:
@@ -30,7 +52,7 @@ class BaseGeneralProcesser:
 
     def load_behav_data(self):
         if self.events_content:
-            self.event_times = misc.df_to_dict(self.events_content)
+            self.event_times = misc.df_to_dict(self.events_content, self.file_extension[1])
             self.event_frames = misc.dict_time_to_samples(self.event_times, self.fparams['fs'])
 
             self.event_times = {}
@@ -41,13 +63,23 @@ class BaseGeneralProcesser:
             for cond in self.conditions: # convert event samples to time in seconds
                 self.event_times[cond] = (np.array(self.event_frames[cond])/self.fparams['fs']).astype('int')
     
+    def trial_preprocessing(self):
+        """
+        MAIN data processing function to extract event-centered data
+
+        extract and save trial data, 
+        saved data are in the event_rel_analysis subfolder, a pickle file that contains the extracted trial data
+        """
+        
+        self.data_dict = misc.extract_trial_data(self.signals, self.tvec, self.trial_begEnd_samp, self.event_frames, self.conditions, baseline_start_end_samp = self.baseline_begEnd_samp)
+    
     def generate_all_data(self):
         self.load_signal_data()
         self.load_behav_data()
 
 class WholeSessionProcessor(BaseGeneralProcesser):
-    def __init__(self, fs, opto_blank_frame, num_rois, selected_conditions, flag_normalization, signals_content, events_content, estimmed_frames=None, cond_colors=['steelblue', 'crimson', 'orchid', 'gold']):
-        super().__init__(signals_content, events_content)
+    def __init__(self, fs, opto_blank_frame, num_rois, selected_conditions, flag_normalization, signals_content, events_content, estimmed_frames=None, cond_colors=['steelblue', 'crimson', 'orchid', 'gold'], file_extension=[".csv", ".csv"]):
+        super().__init__(signals_content, events_content, file_extension)
 
         self.signal_to_plot = None
         self.min_max = None
@@ -110,9 +142,8 @@ class WholeSessionProcessor(BaseGeneralProcesser):
         super().generate_all_data()
 
 class EventRelAnalysisProcessor(BaseGeneralProcesser):
-    def __init__(self, fparams, signals_content, events_content):
-        super().__init__(signals_content, events_content)
-
+    def __init__(self, fparams, signals_content, events_content, file_extension=[".csv", ".csv"]):
+        super().__init__(signals_content, events_content, file_extension)
         self.fparams = fparams
     
     def subplot_loc(self, idx, num_rows, num_col):
@@ -123,21 +154,12 @@ class EventRelAnalysisProcessor(BaseGeneralProcesser):
         return subplot_index
    
     def generate_reference_samples(self):
-        ### create variables that reference samples and times for slicing and plotting the data
+        super().generate_reference_samples()
 
         self.trial_start_end_sec = np.array(self.fparams['trial_start_end']) # trial windowing in seconds relative to ttl-onset/trial-onset, in seconds
         self.baseline_start_end_sec = np.array([self.trial_start_end_sec[0], self.fparams['baseline_end']])
 
-        # convert times to samples and get sample vector for the trial 
-        self.trial_begEnd_samp = self.trial_start_end_sec*self.fparams['fs'] # turn trial start/end times to samples
-        self.trial_svec = np.arange(self.trial_begEnd_samp[0], self.trial_begEnd_samp[1])
-        # and for baseline period
-        self.baseline_begEnd_samp = self.baseline_start_end_sec*self.fparams['fs']
-        self.baseline_svec = (np.arange(self.baseline_begEnd_samp[0], self.baseline_begEnd_samp[1]+1, 1) - self.baseline_begEnd_samp[0]).astype('int')
-
-        # calculate time vector for plot x axes
-        self.num_samples_trial = len( self.trial_svec )
-        self.tvec = np.round(np.linspace(self.trial_start_end_sec[0], self.trial_start_end_sec[1], self.num_samples_trial+1), 2)
+        super().calculate_trial_timing()
 
         # find samples and calculations for time 0 for plotting
         self.t0_sample = misc.get_tvec_sample(self.tvec, 0) # grabs the sample index of a given time from a vector of times
@@ -155,17 +177,14 @@ class EventRelAnalysisProcessor(BaseGeneralProcesser):
             return self.num_rois
         return "Not defined yet: run load_signal_data() first"
     
-    def trial_preprocessing(self):
-        self.data_dict = misc.extract_trial_data(self.signals, self.tvec, self.trial_begEnd_samp, self.event_frames, self.conditions, baseline_start_end_samp = self.baseline_begEnd_samp)
-    
     def generate_all_data(self):
         self.generate_reference_samples()
         super().generate_all_data()
-        self.trial_preprocessing()
+        super().trial_preprocessing()
 
 class EventClusterProcessor(BaseGeneralProcesser):
-    def __init__(self, signals_content, events_content, fs, trial_start_end, baseline_end, event_sort_analysis_win, pca_num_pc_method, max_n_clusters, possible_n_nearest_neighbors, selected_conditions, flag_plot_reward_line, second_event_seconds, heatmap_cmap_scaling, group_data, group_data_conditions, sortwindow):
-        super().__init__(signals_content, events_content)
+    def __init__(self, signals_content, events_content, fs, trial_start_end, baseline_end, event_sort_analysis_win, pca_num_pc_method, max_n_clusters, possible_n_nearest_neighbors, selected_conditions, flag_plot_reward_line, second_event_seconds, heatmap_cmap_scaling, group_data, group_data_conditions, sortwindow, file_extension=[".csv", ".csv"]):
+        super().__init__(signals_content, events_content, file_extension)
 
         self.fs = fs 
         self.trial_start_end = trial_start_end
@@ -186,18 +205,20 @@ class EventClusterProcessor(BaseGeneralProcesser):
         self.declare_variables()
     
     def define_params(self):
-        self.fparams = {}
+        self.fparams = {
+            "fs": self.fs,
+            "opto_blank_frame": False,
+            "selected_conditions": self.selected_conditions,
+            "trial_start_end": self.trial_start_end,
+            "baseline_end": self.baseline_end
+        }
         self.fparams['fs'] = self.fs
         self.fparams['opto_blank_frame'] = False
         self.fparams['selected_conditions'] = self.selected_conditions
 
     def declare_variables(self):
         super().load_signal_data()
-
-        self.trial_start_end_sec = np.array(self.trial_start_end) # trial windowing in seconds relative to ttl-onset/trial-onset, in seconds
-        self.baseline_start_end_sec = np.array([self.trial_start_end_sec[0], self.baseline_end])
-        self.baseline_begEnd_samp = self.baseline_start_end_sec*self.fs
-        self.baseline_svec = (np.arange(self.baseline_begEnd_samp[0], self.baseline_begEnd_samp[1] + 1, 1) - self.baseline_begEnd_samp[0]).astype('int')
+        super().generate_reference_samples()
 
         if self.group_data:
             self.conditions = self.group_data_conditions
@@ -225,23 +246,8 @@ class EventClusterProcessor(BaseGeneralProcesser):
             self.num_conditions = len(self.conditions)
 
             ### define trial timing
-
-            # convert times to samples and get sample vector for the trial 
-            self.trial_begEnd_samp = self.trial_start_end_sec*self.fs # turn trial start/end times to samples
-            self.trial_svec = np.arange(self.trial_begEnd_samp[0], self.trial_begEnd_samp[1])
-            # calculate time vector for plot x axes
-            self.num_samples_trial = len( self.trial_svec )
-            self.tvec = np.round(np.linspace(self.trial_start_end_sec[0], self.trial_start_end_sec[1], self.num_samples_trial+1), 2)
-
-
-            """
-            MAIN data processing function to extract event-centered data
-
-            extract and save trial data, 
-            saved data are in the event_rel_analysis subfolder, a pickle file that contains the extracted trial data
-            """
-            self.data_dict = misc.extract_trial_data(self.signals, self.tvec, self.trial_begEnd_samp, self.event_frames, self.conditions, baseline_start_end_samp = self.baseline_begEnd_samp)
-
+            super().calculate_trial_timing()
+            super().trial_preprocessing()
 
             #### concatenate data across trial conditions
 
@@ -400,3 +406,111 @@ class EventClusterProcessor(BaseGeneralProcesser):
         self.calculate_pca()
         self.calculate_optimum_clusters()
         self.cluster_with_optimal_params()
+
+class PlotActivityContoursProcesser(BaseGeneralProcesser):
+    def __init__(self, signals_content, events_content, simah5_content, sima_mask_content, raw_npilCorr, fs, rois_to_include, analysis_win, activity_name, trial_start_end, baseline_end, selected_conditions, opto_blank_frame, file_extension=[".csv", ".csv"]):
+        super().__init__(signals_content, events_content, file_extension)
+        self.simah5_content = simah5_content
+        self.sima_mask_content = sima_mask_content
+
+        self.analysis_win = analysis_win
+        self.activity_name = activity_name
+        self.rois_to_include = rois_to_include
+        self.raw_npilCorr = raw_npilCorr
+        self.fparams = self.define_params(fs, trial_start_end, baseline_end, selected_conditions, opto_blank_frame)
+    
+    def define_params(self, fs, trial_start_end, baseline_end, selected_conditions, opto_blank_frame):
+        fparams = {}
+
+        fparams['fs'] = fs
+        fparams['trial_start_end'] = trial_start_end
+        fparams['baseline_end'] = baseline_end
+        fparams['selected_conditions'] = selected_conditions
+        fparams['opto_blank_frame'] = opto_blank_frame
+
+        return fparams
+    
+    def generate_std_img(self):
+        # Using multiprocessing to speed up the processing
+        def calculate_std_chunk(chunk):
+            return np.std(chunk, axis=0)
+
+        # Split data into chunks for parallel processing
+        chunk_size = len(self.sima_data) // 1000  # Determine an appropriate chunk size
+        chunks = [self.sima_data[i:i+chunk_size] for i in range(0, len(self.sima_data), chunk_size)]
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            std_chunk_results = executor.map(calculate_std_chunk, chunks)
+
+        # Combine the results
+        self.std_img = np.std(np.array(list(std_chunk_results)), axis=0)
+
+    def identify_conditions(self):
+        if self.fparams['selected_conditions']:
+            self.conditions = self.fparams['selected_conditions']
+        else:
+            # identify conditions to analyze
+            all_conditions = self.event_frames.keys()
+            self.conditions = [ condition for condition in all_conditions if len(self.event_frames[condition]) > 0 ] # keep conditions that have events
+
+            self.conditions.sort()
+            
+    def load_sima_data(self):
+        h5 = h5py.File(self.simah5_content, 'r')
+        sima_data = np.squeeze(np.array(h5[list(h5.keys())[0]])).astype('int16')
+        h5.close()
+        return sima_data
+    
+    def load_sima_masks(self):
+        sima_masks = np.load(self.sima_mask_content)
+        return sima_masks
+    
+    def calculate_std_chunk(self, chunk):
+        return np.std(chunk, axis=0)
+    
+    def generate_binary_array_roi_pixels(self):
+        # make binary array of roi pixels for contour plotting
+        self.zero_template_manual = np.zeros([self.manual_data_dims[1], self.manual_data_dims[2]])
+        self.roi_label_loc_manual = []
+        self.roi_signal_sima = np.empty([self.numROI_sima, self.sima_data.shape[0]])
+
+        for iROI in self.rois_to_include:
+            # make binary map of ROI pixels
+            ypix_roi, xpix_roi = np.where(self.sima_masks[iROI,:,:] == 1)
+            if ypix_roi.size == 0:
+                self.roi_label_loc_manual.append( [0, 0] )
+            else:
+                self.zero_template_manual[ ypix_roi, xpix_roi ] = 1*(iROI+2)
+                self.roi_label_loc_manual.append( [np.min(ypix_roi), np.min(xpix_roi)] )
+                if self.raw_npilCorr == 0:
+                    # not npil corr signal
+                    self.roi_signal_sima[iROI,:] = np.mean(self.sima_data[:, ypix_roi, xpix_roi  ], axis = 1)
+    
+    def get_tvec_sample(self, sample_tvec, time):
+        sample_index = np.argmin(np.abs(sample_tvec - time))
+        return sample_index
+
+    def generate_reference_samples(self):
+        super().generate_reference_samples()
+        self.num_samps = self.roi_signal_sima.shape[-1]
+        self.total_time = self.num_samps/self.fparams['fs']
+        self.tvec = np.linspace(0,self.total_time,self.num_samps)
+    
+    def load_sima_variables(self):
+        self.sima_data = self.load_sima_data()
+        self.manual_data_dims = self.sima_data.shape
+        self.sima_masks = self.load_sima_masks()
+
+        self.numROI_sima = self.sima_masks.shape[0]
+        if not self.rois_to_include:
+            self.rois_to_include = np.arange(self.numROI_sima)
+        self.num_rois_to_include = len(self.rois_to_include)
+    
+    def generate_all_data(self):
+        super().generate_all_data()
+        self.load_sima_variables()
+        self.generate_std_img()
+        self.generate_binary_array_roi_pixels()
+        self.generate_reference_samples()
+        super().trial_preprocessing()
+        self.identify_conditions()

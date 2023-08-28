@@ -45,16 +45,16 @@ def load_h5(fpath):
      reorganize the data dimension order"""
     return data_snip.transpose(1, 2, 0)
 
-def load_signals(fpath, extension="csv"):
+def load_signals(fpath, extension=".csv"):
     try:
         fpath_split = fpath.split(".")
-        fext = fpath_split[len(fpath_split) - 1]
+        fext = "." + fpath_split[len(fpath_split) - 1]
     except:
         fext = extension
 
-    if 'npy' in fext:
+    if '.npy' in fext:
         signals = np.squeeze(np.load(fpath))
-    elif 'csv' in fext:
+    elif '.csv' in fext:
         df_signals = pd.read_csv(fpath, header=None)
         if 'Time(s)/Cell Status' in df_signals.values:
             # for inscopix data, drop first two rows and first column, and transpose
@@ -371,18 +371,21 @@ def dict_time_to_samples(dict_in, fs):
     return dict_in
 
 
-def df_to_dict(fpath):
+def df_to_dict(fpath, file_extension=".csv"):
     """
     Turns a csv containing events names (column 0) and frame samples (column 1) into a dictionary where keys are event names
     and values are lists containing each event's frame samples
     """
 
-    event_frames_dict = {}
-    event_frames_df = pd.read_csv(fpath)
-    for condition in event_frames_df['event'].unique():
-        event_frames_dict[condition] = list(event_frames_df[event_frames_df['event'] == condition]['time'])
-    return event_frames_dict
-
+    if file_extension == ".pkl":
+        return pickle.load(fpath)
+    else:
+        event_frames_dict = {}
+        event_frames_df = pd.read_csv(fpath)
+        for condition in event_frames_df['event'].unique():
+            event_frames_dict[condition] = list(event_frames_df[event_frames_df['event'] == condition]['time'])
+        return event_frames_dict
+    
 # function for finding the index of the closest entry in an array to a provided value
 def find_nearest_idx(array, value):
     if isinstance(array, pd.Series):
