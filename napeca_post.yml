@@ -82,6 +82,7 @@ dependencies:
     - seaborn==0.9.0
     - send2trash==1.8.0
     - six==1.16.0
+    - suite2p==0.10.3
     - statsmodels==0.10.1
     - tenacity==8.0.1
     - terminado==0.13.3
