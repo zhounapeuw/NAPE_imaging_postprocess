@@ -1,0 +1,33 @@
+.. NAPE2p_Benchmark Documentation documentation master file, created by
+   sphinx-quickstart on Fri Nov  1 10:21:54 2019.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
+
+.. Title is above = signs and length of = should be longer than the title
+
+Welcome to NAPE Center Calcium Imaging Analysis Documentation Site!        
+===========================================================================
+
+.. Home Page Description
+
+Welcome to the University of Washington Center for Neurobiology of Addiction, Pain, and Emotion (NAPE) 2-photon calcium imaging analysis documentation website. Here we provide comprehensive documentation and guidelines for using the preprocessing and analysis tools for deep brain, GRIN-lens 2-photon calcium imaging.
+
+Custom code and documentation were written by Zhe Charles Zhou and Tanish Kapur.
+
+___________________________________________________________________________
+
+.. Index of pages where names refer to relevant file names. Change maxdepth to increase number of sub headings (should be one more than actual number of headings)
+
+.. toctree::
+   :maxdepth: 3
+   :caption: Contents
+
+   suite2p
+   demos
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
