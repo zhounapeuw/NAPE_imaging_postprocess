@@ -23,7 +23,6 @@ To facilitate this process, all commands to be executed in the command prompt ar
 
 * The 64-bit graphical installer is recommended for most PCs.
 * Choose Python 3.9 version for most up-to-date python version.
-* Note: You can still install a Python 2.7 environment in Anaconda.
 
 .. image:: _images/Anaconda_Download_screenshot.png.png
 
@@ -40,10 +39,10 @@ To facilitate this process, all commands to be executed in the command prompt ar
 Starting Anaconda and installing an environment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-5) Download the NAPE analysis script repository from this link: https://github.com/zhounapeuw/NAPE_imaging_analysis
+5) Download the NAPE analysis script repository from this link: https://github.com/zhounapeuw/NAPE_imaging_postprocess
 
 .. image:: _ images/anaconda_sima_install/13_download_mc_code.png
-Once on the GitHub repository, click the "Code" dropdown followed by "Download zip".
+Once on the GitHub repository, click the "Code" dropdown followed by "Download zip". You can also clone/fork the repository if you are familiar how to do so.
 
 6) Take note of where the downloaded zip file resides and unzip the directory.
 
@@ -74,27 +73,25 @@ Solving environment: done
 ..
   .. image:: _images/anaconda_sima_install/5_2_update_conda.PNG
 
-8) Once you have the repository downloaded from GitHub and unzipped (steps 1-6), in Anaconda Prompt, navigate to this folder by using the ``cd`` command and specify the correct path. For example, when the folder is downloaded to desktop, the command will be ``cd Desktop/NAPE_imaging_analysis-master``.
+8) Once you have the repository downloaded from GitHub and unzipped (steps 1-6), in Anaconda Prompt, navigate to this folder by using the ``cd`` command and specify the correct path. For example, when the folder is downloaded to desktop, the command will be ``cd Desktop/NAPE_imaging_postprocess-main``.
 
->>> (base) C:\Users\stuberadmin>cd Desktop/NAPE_imaging_analysis
->>> (base) C:\Users\stuberadmin\Desktop\NAPE_imaging_analysis>
+>>> (base) C:\Users\stuberadmin>cd Desktop/NAPE_imaging_postprocess-main
+>>> (base) C:\Users\stuberadmin\Desktop\NAPE_imaging_postprocess-main>
 
-Notice that the current directory has changed from stuberadmin to NAPE_imaging_analysis.
-If you made no changes to where the folder should be downloaded and unzipped, the command ``cd Downloads\NAPE_imaging_analysis-master\NAPE_imaging_analysis-master`` should take you to the correct path.
+Notice that the current directory has changed from stuberadmin to NAPE_imaging_analysis (in the above example).
+If you made no changes to where the folder should be downloaded and unzipped, the command ``cd Downloads\NAPE_imaging_analysis-master\NAPE_imaging_postprocess-main`` should take you to the correct path.
 
 ..
   .. image:: _images/anaconda_sima_install/8_cd.png
 
-9) Now we need to create a virtual environment using conda and the napeca_win.yml file, which is located in the root folder (NAPE_imaging_analysis-master).
-Note that we already used the ``cd`` command to navigate to the NAPE_imaging_analysis folder.
-Copy, paste, and execute the following code into the anaconda prompt to recreate a new environment from the napeca_win.yml file:
-``conda env create -n napeca_env -f napeca_win.yml``
+9) Now we need to create a virtual environment using conda and the napeca_post.yml file, which is located in the root folder (NAPE_imaging_postprocess-main).
+Note that we already used the ``cd`` command to navigate to the NAPE_imaging_postprocess-main.
+Copy, paste, and execute the following code into the anaconda prompt to recreate a new environment from the napeca_post.yml file:
+``conda env create -n napeca_post -f napeca_post.yml``
 
-For linux installations use: ``conda env create -n napeca_env -f napeca_linux.yml``
+* Note: The package has not been developed or tested for MacOS or linux as of yet.
 
-* Note: The package has not been developed or tested for MacOS as of yet.
-
->>> (base) C:\Users\stuberadmin\Desktop\NAPE_imaging_analysis>conda env create -n napeca_env -f napeca_win.yml
+>>> (base) C:\Users\stuberadmin\Desktop\NAPE_imaging_analysis>conda env create -n napeca_post -f napeca_post.yml
 Collecting package metadata (repodata.json): done
 Solving environment: done
 Preparing transaction: done
@@ -106,7 +103,7 @@ done
 ##
 # To activate this environment, use
 #
-#     $ conda activate napeca_env
+#     $ conda activate napeca_post
 ##
 # To deactivate an active environment, use
 #
@@ -127,27 +124,7 @@ Once the environment installer runs through, you should see a list of all the co
 
 Notice the environment has changed from base to napeca_env
 
-..
-  .. image:: _images/anaconda_sima_install/10_activate.png
-
-11) Now, we need to install some additional prerequisites. Use the commands ``pip install Shapely-1.6.4.post2-cp27-cp27m-win_amd64.whl PyQt4-4.11.4-cp27-cp27m-win_amd64.whl``
-
->>> (napeca_env) C:\Users\stuberadmin\Desktop\NAPE_imaging_analysis>pip install Shapely-1.6.4.post2-cp27-cp27m-win_amd64.whl PyQt4-4.11.4-cp27-cp27m-win_amd64.whl
-
-
-12) If you encounter an error that contains: LookupError: unknown encoding: cp65001 , you will need to execute the following line: ``set PYTHONIOENCODING=UTF-8``
-
-13) Finally, to complete the environment installation, execute ``pip install sima``
-
->>> (napeca_env) C:\Users\stuberadmin\Desktop\NAPE_imaging_analysis>pip install sima
-(you will expect to see a lot of text here)
-Installing collected packages: sima
-Successfully installed sima-1.3.2
-
-..
-  .. image:: _images/anaconda_sima_install/13_sima_install.png
-
-Using jupyter notebook to edit and run (SIMA) code
+Using jupyter notebook to edit and run jupyter code
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 14) Execute ``jupyter notebook`` and an instance of jupyter will start up in your web browser.
@@ -164,9 +141,9 @@ Then the following window will open in your default browser:
 
 Click the napeca folder which will contain the jupyter notebook.
 
-Click the main_parallel.ipynb link and a jupyter notebook will open.
+Click (or double-click) the jupyter notebook you want to use (.ipynb extension) link and a jupyter notebook will open.
 
-A jupyter notebook consists of cells where one can write and execute code. Typically the first cell contains lines for importing packages and dependencies. For example, for us to use the SIMA library and its functions, we must have an import sima line.
+A jupyter notebook consists of cells where one can write and execute code. Typically the first cell contains lines for importing packages and dependencies. 
 
 * To run a cell, the easiest way is to press shift + enter
 * Refer to this guide for more details on how to use jupyter notebook: https://www.codecademy.com/articles/how-to-use-jupyter-notebooks

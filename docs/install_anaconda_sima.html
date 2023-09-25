@@ -91,7 +91,7 @@
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Anaconda, Jupyter Notebook, SIMA Installation Guide</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#starting-anaconda-and-installing-an-environment">Starting Anaconda and installing an environment</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#using-jupyter-notebook-to-edit-and-run-sima-code">Using jupyter notebook to edit and run (SIMA) code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#using-jupyter-notebook-to-edit-and-run-jupyter-code">Using jupyter notebook to edit and run jupyter code</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
 </ul>
 </li>
@@ -176,7 +176,6 @@ To facilitate this process, all commands to be executed in the command prompt ar
 <ul class="simple">
 <li><p>The 64-bit graphical installer is recommended for most PCs.</p></li>
 <li><p>Choose Python 3.9 version for most up-to-date python version.</p></li>
-<li><p>Note: You can still install a Python 2.7 environment in Anaconda.</p></li>
 </ul>
 <img alt="_images/Anaconda_Download_screenshot.png.png" src="_images/Anaconda_Download_screenshot.png.png" />
 <ol class="arabic simple" start="2">
@@ -193,10 +192,10 @@ To facilitate this process, all commands to be executed in the command prompt ar
 <div class="section" id="starting-anaconda-and-installing-an-environment">
 <h2>Starting Anaconda and installing an environment<a class="headerlink" href="#starting-anaconda-and-installing-an-environment" title="Permalink to this heading">¶</a></h2>
 <ol class="arabic simple" start="5">
-<li><p>Download the NAPE analysis script repository from this link: <a class="reference external" href="https://github.com/zhounapeuw/NAPE_imaging_analysis">https://github.com/zhounapeuw/NAPE_imaging_analysis</a></p></li>
+<li><p>Download the NAPE analysis script repository from this link: <a class="reference external" href="https://github.com/zhounapeuw/NAPE_imaging_postprocess">https://github.com/zhounapeuw/NAPE_imaging_postprocess</a></p></li>
 </ol>
 <img alt="_images/13_download_mc_code.png" src="_images/13_download_mc_code.png" />
-<p>Once on the GitHub repository, click the “Code” dropdown followed by “Download zip”.</p>
+<p>Once on the GitHub repository, click the “Code” dropdown followed by “Download zip”. You can also clone/fork the repository if you are familiar how to do so.</p>
 <ol class="arabic simple" start="6">
 <li><p>Take note of where the downloaded zip file resides and unzip the directory.</p></li>
 </ol>
@@ -221,23 +220,22 @@ To unzip files on Mac, double click on the zip file.</p>
 </pre></div>
 </div>
 <ol class="arabic simple" start="8">
-<li><p>Once you have the repository downloaded from GitHub and unzipped (steps 1-6), in Anaconda Prompt, navigate to this folder by using the <code class="docutils literal notranslate"><span class="pre">cd</span></code> command and specify the correct path. For example, when the folder is downloaded to desktop, the command will be <code class="docutils literal notranslate"><span class="pre">cd</span> <span class="pre">Desktop/NAPE_imaging_analysis-master</span></code>.</p></li>
+<li><p>Once you have the repository downloaded from GitHub and unzipped (steps 1-6), in Anaconda Prompt, navigate to this folder by using the <code class="docutils literal notranslate"><span class="pre">cd</span></code> command and specify the correct path. For example, when the folder is downloaded to desktop, the command will be <code class="docutils literal notranslate"><span class="pre">cd</span> <span class="pre">Desktop/NAPE_imaging_postprocess-main</span></code>.</p></li>
 </ol>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="n">base</span><span class="p">)</span> <span class="n">C</span><span class="p">:</span>\<span class="n">Users</span>\<span class="n">stuberadmin</span><span class="o">&gt;</span><span class="n">cd</span> <span class="n">Desktop</span><span class="o">/</span><span class="n">NAPE_imaging_analysis</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="n">base</span><span class="p">)</span> <span class="n">C</span><span class="p">:</span>\<span class="n">Users</span>\<span class="n">stuberadmin</span>\<span class="n">Desktop</span>\<span class="n">NAPE_imaging_analysis</span><span class="o">&gt;</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="n">base</span><span class="p">)</span> <span class="n">C</span><span class="p">:</span>\<span class="n">Users</span>\<span class="n">stuberadmin</span><span class="o">&gt;</span><span class="n">cd</span> <span class="n">Desktop</span><span class="o">/</span><span class="n">NAPE_imaging_postprocess</span><span class="o">-</span><span class="n">main</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="n">base</span><span class="p">)</span> <span class="n">C</span><span class="p">:</span>\<span class="n">Users</span>\<span class="n">stuberadmin</span>\<span class="n">Desktop</span>\<span class="n">NAPE_imaging_postprocess</span><span class="o">-</span><span class="n">main</span><span class="o">&gt;</span>
 </pre></div>
 </div>
-<p>Notice that the current directory has changed from stuberadmin to NAPE_imaging_analysis.
-If you made no changes to where the folder should be downloaded and unzipped, the command <code class="docutils literal notranslate"><span class="pre">cd</span> <span class="pre">Downloads\NAPE_imaging_analysis-master\NAPE_imaging_analysis-master</span></code> should take you to the correct path.</p>
-<p>9) Now we need to create a virtual environment using conda and the napeca_win.yml file, which is located in the root folder (NAPE_imaging_analysis-master).
-Note that we already used the <code class="docutils literal notranslate"><span class="pre">cd</span></code> command to navigate to the NAPE_imaging_analysis folder.
-Copy, paste, and execute the following code into the anaconda prompt to recreate a new environment from the napeca_win.yml file:
-<code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">env</span> <span class="pre">create</span> <span class="pre">-n</span> <span class="pre">napeca_env</span> <span class="pre">-f</span> <span class="pre">napeca_win.yml</span></code></p>
-<p>For linux installations use: <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">env</span> <span class="pre">create</span> <span class="pre">-n</span> <span class="pre">napeca_env</span> <span class="pre">-f</span> <span class="pre">napeca_linux.yml</span></code></p>
+<p>Notice that the current directory has changed from stuberadmin to NAPE_imaging_analysis (in the above example).
+If you made no changes to where the folder should be downloaded and unzipped, the command <code class="docutils literal notranslate"><span class="pre">cd</span> <span class="pre">Downloads\NAPE_imaging_analysis-master\NAPE_imaging_postprocess-main</span></code> should take you to the correct path.</p>
+<p>9) Now we need to create a virtual environment using conda and the napeca_post.yml file, which is located in the root folder (NAPE_imaging_postprocess-main).
+Note that we already used the <code class="docutils literal notranslate"><span class="pre">cd</span></code> command to navigate to the NAPE_imaging_postprocess-main.
+Copy, paste, and execute the following code into the anaconda prompt to recreate a new environment from the napeca_post.yml file:
+<code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">env</span> <span class="pre">create</span> <span class="pre">-n</span> <span class="pre">napeca_post</span> <span class="pre">-f</span> <span class="pre">napeca_post.yml</span></code></p>
 <ul class="simple">
-<li><p>Note: The package has not been developed or tested for MacOS as of yet.</p></li>
+<li><p>Note: The package has not been developed or tested for MacOS or linux as of yet.</p></li>
 </ul>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="n">base</span><span class="p">)</span> <span class="n">C</span><span class="p">:</span>\<span class="n">Users</span>\<span class="n">stuberadmin</span>\<span class="n">Desktop</span>\<span class="n">NAPE_imaging_analysis</span><span class="o">&gt;</span><span class="n">conda</span> <span class="n">env</span> <span class="n">create</span> <span class="o">-</span><span class="n">n</span> <span class="n">napeca_env</span> <span class="o">-</span><span class="n">f</span> <span class="n">napeca_win</span><span class="o">.</span><span class="n">yml</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="n">base</span><span class="p">)</span> <span class="n">C</span><span class="p">:</span>\<span class="n">Users</span>\<span class="n">stuberadmin</span>\<span class="n">Desktop</span>\<span class="n">NAPE_imaging_analysis</span><span class="o">&gt;</span><span class="n">conda</span> <span class="n">env</span> <span class="n">create</span> <span class="o">-</span><span class="n">n</span> <span class="n">napeca_post</span> <span class="o">-</span><span class="n">f</span> <span class="n">napeca_post</span><span class="o">.</span><span class="n">yml</span>
 <span class="go">Collecting package metadata (repodata.json): done</span>
 <span class="go">Solving environment: done</span>
 <span class="go">Preparing transaction: done</span>
@@ -249,7 +247,7 @@ Copy, paste, and execute the following code into the anaconda prompt to recreate
 <span class="go">##</span>
 <span class="go"># To activate this environment, use</span>
 <span class="go">#</span>
-<span class="go">#     $ conda activate napeca_env</span>
+<span class="go">#     $ conda activate napeca_post</span>
 <span class="go">##</span>
 <span class="go"># To deactivate an active environment, use</span>
 <span class="go">#</span>
@@ -265,25 +263,9 @@ Copy, paste, and execute the following code into the anaconda prompt to recreate
 </pre></div>
 </div>
 <p>Notice the environment has changed from base to napeca_env</p>
-<ol class="arabic simple" start="11">
-<li><p>Now, we need to install some additional prerequisites. Use the commands <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">Shapely-1.6.4.post2-cp27-cp27m-win_amd64.whl</span> <span class="pre">PyQt4-4.11.4-cp27-cp27m-win_amd64.whl</span></code></p></li>
-</ol>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="n">napeca_env</span><span class="p">)</span> <span class="n">C</span><span class="p">:</span>\<span class="n">Users</span>\<span class="n">stuberadmin</span>\<span class="n">Desktop</span>\<span class="n">NAPE_imaging_analysis</span><span class="o">&gt;</span><span class="n">pip</span> <span class="n">install</span> <span class="n">Shapely</span><span class="o">-</span><span class="mf">1.6.4</span><span class="o">.</span><span class="n">post2</span><span class="o">-</span><span class="n">cp27</span><span class="o">-</span><span class="n">cp27m</span><span class="o">-</span><span class="n">win_amd64</span><span class="o">.</span><span class="n">whl</span> <span class="n">PyQt4</span><span class="o">-</span><span class="mf">4.11.4</span><span class="o">-</span><span class="n">cp27</span><span class="o">-</span><span class="n">cp27m</span><span class="o">-</span><span class="n">win_amd64</span><span class="o">.</span><span class="n">whl</span>
-</pre></div>
 </div>
-<ol class="arabic simple" start="12">
-<li><p>If you encounter an error that contains: LookupError: unknown encoding: cp65001 , you will need to execute the following line: <code class="docutils literal notranslate"><span class="pre">set</span> <span class="pre">PYTHONIOENCODING=UTF-8</span></code></p></li>
-<li><p>Finally, to complete the environment installation, execute <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">sima</span></code></p></li>
-</ol>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="n">napeca_env</span><span class="p">)</span> <span class="n">C</span><span class="p">:</span>\<span class="n">Users</span>\<span class="n">stuberadmin</span>\<span class="n">Desktop</span>\<span class="n">NAPE_imaging_analysis</span><span class="o">&gt;</span><span class="n">pip</span> <span class="n">install</span> <span class="n">sima</span>
-<span class="go">(you will expect to see a lot of text here)</span>
-<span class="go">Installing collected packages: sima</span>
-<span class="go">Successfully installed sima-1.3.2</span>
-</pre></div>
-</div>
-</div>
-<div class="section" id="using-jupyter-notebook-to-edit-and-run-sima-code">
-<h2>Using jupyter notebook to edit and run (SIMA) code<a class="headerlink" href="#using-jupyter-notebook-to-edit-and-run-sima-code" title="Permalink to this heading">¶</a></h2>
+<div class="section" id="using-jupyter-notebook-to-edit-and-run-jupyter-code">
+<h2>Using jupyter notebook to edit and run jupyter code<a class="headerlink" href="#using-jupyter-notebook-to-edit-and-run-jupyter-code" title="Permalink to this heading">¶</a></h2>
 <ol class="arabic simple" start="14">
 <li><p>Execute <code class="docutils literal notranslate"><span class="pre">jupyter</span> <span class="pre">notebook</span></code> and an instance of jupyter will start up in your web browser.</p></li>
 </ol>
@@ -295,8 +277,8 @@ Copy, paste, and execute the following code into the anaconda prompt to recreate
 <p>Then the following window will open in your default browser:</p>
 <img alt="_images/Github_directory.png" src="_images/Github_directory.png" />
 <p>Click the napeca folder which will contain the jupyter notebook.</p>
-<p>Click the main_parallel.ipynb link and a jupyter notebook will open.</p>
-<p>A jupyter notebook consists of cells where one can write and execute code. Typically the first cell contains lines for importing packages and dependencies. For example, for us to use the SIMA library and its functions, we must have an import sima line.</p>
+<p>Click (or double-click) the jupyter notebook you want to use (.ipynb extension) link and a jupyter notebook will open.</p>
+<p>A jupyter notebook consists of cells where one can write and execute code. Typically the first cell contains lines for importing packages and dependencies.</p>
 <ul class="simple">
 <li><p>To run a cell, the easiest way is to press shift + enter</p></li>
 <li><p>Refer to this guide for more details on how to use jupyter notebook: <a class="reference external" href="https://www.codecademy.com/articles/how-to-use-jupyter-notebooks">https://www.codecademy.com/articles/how-to-use-jupyter-notebooks</a></p></li>
