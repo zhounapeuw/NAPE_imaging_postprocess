@@ -7,14 +7,14 @@
 
 .. Title is above = signs and length of = should be longer than the title. '=' is heading size 3, and we can use other special characters for different heading sizes, which can be referred in the cheat sheet.
 
-Welcome to NAPE Center Calcium Imaging Analysis Documentation Site!        
+Welcome to NAPE Center Imaging Postprocessing Analysis Documentation Site!        
 ===========================================================================
 
 .. Home Page Description
 
 Welcome to the University of Washington Center for Neurobiology of Addiction, Pain, and Emotion (NAPE) 2-photon calcium imaging analysis documentation website. Here we provide comprehensive documentation and guidelines for using the preprocessing and analysis tools for deep brain, GRIN-lens 2-photon calcium imaging.
 
-Custom code and documentation were written by Zhe Charles Zhou and Tanish Kapur.
+Documentation was written by Zhe Charles Zhou.
 
 ___________________________________________________________________________
 
@@ -29,8 +29,6 @@ ___________________________________________________________________________
    :caption: Contents
 
    install_anaconda_sima
-   installs2p
-   suite2p
    demos
 
 .. |br| raw:: html
