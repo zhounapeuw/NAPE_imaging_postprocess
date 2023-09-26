@@ -1,7 +1,7 @@
-Anaconda, Jupyter Notebook, SIMA Installation Guide
-===================================================
+Anaconda, Github repo, Jupyter Notebook Installation Guide
+==========================================================
 
-This tutorial will walk you through how to install python and the Anaconda Prompt/Navigator, the necessary prerequisites to run the calcium imaging preprocessing analysis. The steps involve:
+This tutorial will walk you through how to install python and the Anaconda Prompt/Navigator, the necessary prerequisites to run the calcium imaging postprocessing analysis. The steps involve:
 
 .. highlight:: rst
 
