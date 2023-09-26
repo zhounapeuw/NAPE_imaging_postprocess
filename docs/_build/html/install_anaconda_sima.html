@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Anaconda, Github repo, Jupyter Notebook Installation Guide &mdash; NAPE Center Calcium Imaging Analysis Documentation 1.0 documentation</title>
+  <title>Starting Anaconda and installing an environment &mdash; NAPE Center Calcium Imaging Analysis Documentation 1.0 documentation</title>
   
 
   
@@ -89,12 +89,10 @@
             
               <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Anaconda, Github repo, Jupyter Notebook Installation Guide</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#starting-anaconda-and-installing-an-environment">Starting Anaconda and installing an environment</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#using-jupyter-notebook-to-edit-and-run-jupyter-code">Using jupyter notebook to edit and run jupyter code</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
-</ul>
-</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Starting Anaconda and installing an environment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#environment-creation-with-requirements-txt-also-mac-option">Environment creation with requirements.txt (also Mac option)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#using-jupyter-notebook-to-edit-and-run-jupyter-code">Using jupyter notebook to edit and run jupyter code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
 <li class="toctree-l1"><a class="reference internal" href="demos.html">Suite2p Segmentation Parameter Explanations and Demos</a></li>
 </ul>
 
@@ -141,7 +139,7 @@
     
       <li><a href="NAPE_Head.html">Docs</a> &raquo;</li>
         
-      <li>Anaconda, Github repo, Jupyter Notebook Installation Guide</li>
+      <li>Starting Anaconda and installing an environment</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -160,8 +158,10 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="anaconda-github-repo-jupyter-notebook-installation-guide">
-<h1>Anaconda, Github repo, Jupyter Notebook Installation Guide<a class="headerlink" href="#anaconda-github-repo-jupyter-notebook-installation-guide" title="Permalink to this heading">¶</a></h1>
+  <blockquote>
+<div><p>Anaconda, Github repo, Jupyter Notebook Installation Guide</p>
+</div></blockquote>
+<hr class="docutils" />
 <p>This tutorial will walk you through how to install python and the Anaconda Prompt/Navigator, the necessary prerequisites to run the calcium imaging postprocessing analysis. The steps involve:</p>
 <ul class="simple">
 <li><p>Install Anaconda: this is a graphical and command line interface that allows you to manage multiple, unique instances (called environments) of python that can be tailored to different projects. Think of Anaconda as a drawer file organizer where each folder (ie. environment) pertains to a specific project/topic.</p></li>
@@ -190,7 +190,7 @@ To facilitate this process, all commands to be executed in the command prompt ar
 <li><p>On the Advanced Installation Options window, keep the default settings and hit “Install” and continue through the installation until the end (ie. Hit “Next”s)</p></li>
 </ol>
 <div class="section" id="starting-anaconda-and-installing-an-environment">
-<h2>Starting Anaconda and installing an environment<a class="headerlink" href="#starting-anaconda-and-installing-an-environment" title="Permalink to this heading">¶</a></h2>
+<h1>Starting Anaconda and installing an environment<a class="headerlink" href="#starting-anaconda-and-installing-an-environment" title="Permalink to this heading">¶</a></h1>
 <ol class="arabic simple" start="5">
 <li><p>Download the NAPE analysis script repository from this link: <a class="reference external" href="https://github.com/zhounapeuw/NAPE_imaging_postprocess">https://github.com/zhounapeuw/NAPE_imaging_postprocess</a></p></li>
 </ol>
@@ -264,9 +264,16 @@ Copy, paste, and execute the following code into the anaconda prompt to recreate
 </div>
 <p>Notice the environment has changed from base to napeca_post</p>
 </div>
+<div class="section" id="environment-creation-with-requirements-txt-also-mac-option">
+<h1>Environment creation with requirements.txt (also Mac option)<a class="headerlink" href="#environment-creation-with-requirements-txt-also-mac-option" title="Permalink to this heading">¶</a></h1>
+<p>9b) If the steps 9-10 don’t work above, you can also create a new clean anaconda environment using:</p>
+<p><code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">create</span> <span class="pre">--name</span> <span class="pre">napeca_post</span> <span class="pre">python=3.9</span></code></p>
+<p>10b) After you activate the new environment, navigate to the downloaded repository and install the prerequisite packages using:</p>
+<p><code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-r</span> <span class="pre">requirements.txt</span></code></p>
+</div>
 <div class="section" id="using-jupyter-notebook-to-edit-and-run-jupyter-code">
-<h2>Using jupyter notebook to edit and run jupyter code<a class="headerlink" href="#using-jupyter-notebook-to-edit-and-run-jupyter-code" title="Permalink to this heading">¶</a></h2>
-<ol class="arabic simple" start="14">
+<h1>Using jupyter notebook to edit and run jupyter code<a class="headerlink" href="#using-jupyter-notebook-to-edit-and-run-jupyter-code" title="Permalink to this heading">¶</a></h1>
+<ol class="arabic simple" start="11">
 <li><p>Execute <code class="docutils literal notranslate"><span class="pre">jupyter</span> <span class="pre">notebook</span></code> and an instance of jupyter will start up in your web browser.</p></li>
 </ol>
 <ul class="simple">
@@ -287,7 +294,7 @@ Copy, paste, and execute the following code into the anaconda prompt to recreate
 <p>Read and follow the documentation within the jupyter notebook on how to analyze data.</p>
 </div>
 <div class="section" id="troubleshooting">
-<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this heading">¶</a></h2>
+<h1>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this heading">¶</a></h1>
 <p>A) If you encounter the following problem during environment installation:
 LinkError: post-link script failed for package defaults::qt-5.6.2-vc9hc26998b_12
 location of failed script: C:UsersstuberadminAnaconda3envstmp_simaScripts.qt-post-link.bat
@@ -297,7 +304,6 @@ You will need to search “edit the system environment variables” in the searc
 <ol class="arabic simple" start="4">
 <li><p>Replace <code class="code highlight python docutils literal highlight-python"><span class="p">{</span><span class="n">PATH_TO_THE_FILE</span><span class="p">}</span></code> with path of <code class="code highlight python docutils literal highlight-python"><span class="n">environment</span><span class="o">.</span><span class="n">yml</span></code> and run <code class="code highlight python docutils literal highlight-python"><span class="n">conda</span> <span class="n">env</span> <span class="n">create</span> <span class="o">-</span><span class="n">f</span> <span class="p">{</span><span class="n">PATH_TO_THE_FILE</span><span class="p">}</span><span class="n">environment</span><span class="o">.</span><span class="n">yml</span></code>. In this case, <code class="code highlight python docutils literal highlight-python"><span class="p">{</span><span class="n">PATH_TO_THE_FILE</span><span class="p">}</span></code> is <code class="code highlight python docutils literal highlight-python"><span class="n">D</span><span class="p">:</span><span class="n">NAPE_2pBenchmark</span></code></p></li>
 </ol>
-</div>
 </div>
 
 

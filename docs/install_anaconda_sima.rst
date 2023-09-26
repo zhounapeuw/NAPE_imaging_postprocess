@@ -1,4 +1,4 @@
-Anaconda, Github repo, Jupyter Notebook Installation Guide
+					Anaconda, Github repo, Jupyter Notebook Installation Guide
 ==========================================================
 
 This tutorial will walk you through how to install python and the Anaconda Prompt/Navigator, the necessary prerequisites to run the calcium imaging postprocessing analysis. The steps involve:
@@ -124,10 +124,21 @@ Once the environment installer runs through, you should see a list of all the co
 
 Notice the environment has changed from base to napeca_post
 
+Environment creation with requirements.txt (also Mac option)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+9b) If the steps 9-10 don't work above, you can also create a new clean anaconda environment using:
+
+``conda create --name napeca_post python=3.9``
+
+10b) After you activate the new environment, navigate to the downloaded repository and install the prerequisite packages using:
+
+``pip install -r requirements.txt``
+
 Using jupyter notebook to edit and run jupyter code
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-14) Execute ``jupyter notebook`` and an instance of jupyter will start up in your web browser.
+11) Execute ``jupyter notebook`` and an instance of jupyter will start up in your web browser.
 
 * Jupyter notebook is a powerful application that allows for editing and running python code. Anaconda boots up an instance of python that can be interacted with via the jupyter notebook web client.
 
