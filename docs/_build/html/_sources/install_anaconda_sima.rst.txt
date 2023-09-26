@@ -13,7 +13,7 @@ This tutorial will walk you through how to install python and the Anaconda Promp
     <br>
 
 * Install Anaconda: this is a graphical and command line interface that allows you to manage multiple, unique instances (called environments) of python that can be tailored to different projects. Think of Anaconda as a drawer file organizer where each folder (ie. environment) pertains to a specific project/topic.
-* Set up an Anaconda environment for the specific calcium imaging preprocessing project: An environment is a directory/instance that contains a collection of python packages that the user can customize and tailor to a specific project. This is especially important if you have multiple projects that require different versions of python or conflicting packages/libraries that must be separated.
+* Set up an Anaconda environment for the specific imaging postprocessing pipeline: An environment is a directory/instance that contains a collection of python packages that the user can customize and tailor to a specific project. This is especially important if you have multiple projects that require different versions of python or conflicting packages/libraries that must be separated.
 * Open and run jupyter notebook, an application that allows for editing, running, and prototyping python code.
 
 Unfortunately and fortunately (it’s beneficial to learn some coding!) for you, this will involve some tinkering with the Anaconda command prompt.
@@ -22,7 +22,7 @@ To facilitate this process, all commands to be executed in the command prompt ar
 1) Download the Anaconda Installer: https://www.anaconda.com/distribution/#windows and run the installer.
 
 * The 64-bit graphical installer is recommended for most PCs.
-* Choose Python 3.9 version for most up-to-date python version.
+* Choose Python 3.9 version (or latest) for most up-to-date python version.
 
 .. image:: _images/Anaconda_Download_screenshot.png.png
 
@@ -79,7 +79,7 @@ Solving environment: done
 >>> (base) C:\Users\stuberadmin\Desktop\NAPE_imaging_postprocess-main>
 
 Notice that the current directory has changed from stuberadmin to NAPE_imaging_analysis (in the above example).
-If you made no changes to where the folder should be downloaded and unzipped, the command ``cd Downloads\NAPE_imaging_analysis-master\NAPE_imaging_postprocess-main`` should take you to the correct path.
+If you made no changes to where the folder should be downloaded and unzipped, the command ``cd Downloads\NAPE_imaging_postprocess-main`` should take you to the correct path.
 
 ..
   .. image:: _images/anaconda_sima_install/8_cd.png
@@ -119,13 +119,13 @@ Once the environment installer runs through, you should see a list of all the co
 
 10) Thus far, we have been operating under the default, base environment; we need to switch over to the new napeca_env environment we just created. We do this by typing and executing: ``conda activate napeca_env``.
 
->>> (base) C:\Users\stuberadmin\Desktop\NAPE_imaging_analysis>conda activate napeca_env
->>> (napeca_env) C:\Users\stuberadmin\Desktop\NAPE_imaging_analysis>
+>>> (base) C:\Users\stuberadmin\Desktop\NAPE_imaging_analysis>conda activate napeca_post
+>>> (napeca_post) C:\Users\stuberadmin\Desktop\NAPE_imaging_analysis>
 
-Notice the environment has changed from base to napeca_env
+Notice the environment has changed from base to napeca_post
 
 Using jupyter notebook to edit and run jupyter code
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 14) Execute ``jupyter notebook`` and an instance of jupyter will start up in your web browser.
 

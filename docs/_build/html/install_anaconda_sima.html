@@ -165,7 +165,7 @@
 <p>This tutorial will walk you through how to install python and the Anaconda Prompt/Navigator, the necessary prerequisites to run the calcium imaging postprocessing analysis. The steps involve:</p>
 <ul class="simple">
 <li><p>Install Anaconda: this is a graphical and command line interface that allows you to manage multiple, unique instances (called environments) of python that can be tailored to different projects. Think of Anaconda as a drawer file organizer where each folder (ie. environment) pertains to a specific project/topic.</p></li>
-<li><p>Set up an Anaconda environment for the specific calcium imaging preprocessing project: An environment is a directory/instance that contains a collection of python packages that the user can customize and tailor to a specific project. This is especially important if you have multiple projects that require different versions of python or conflicting packages/libraries that must be separated.</p></li>
+<li><p>Set up an Anaconda environment for the specific imaging postprocessing pipeline: An environment is a directory/instance that contains a collection of python packages that the user can customize and tailor to a specific project. This is especially important if you have multiple projects that require different versions of python or conflicting packages/libraries that must be separated.</p></li>
 <li><p>Open and run jupyter notebook, an application that allows for editing, running, and prototyping python code.</p></li>
 </ul>
 <p>Unfortunately and fortunately (it’s beneficial to learn some coding!) for you, this will involve some tinkering with the Anaconda command prompt.
@@ -175,7 +175,7 @@ To facilitate this process, all commands to be executed in the command prompt ar
 </ol>
 <ul class="simple">
 <li><p>The 64-bit graphical installer is recommended for most PCs.</p></li>
-<li><p>Choose Python 3.9 version for most up-to-date python version.</p></li>
+<li><p>Choose Python 3.9 version (or latest) for most up-to-date python version.</p></li>
 </ul>
 <img alt="_images/Anaconda_Download_screenshot.png.png" src="_images/Anaconda_Download_screenshot.png.png" />
 <ol class="arabic simple" start="2">
@@ -227,7 +227,7 @@ To unzip files on Mac, double click on the zip file.</p>
 </pre></div>
 </div>
 <p>Notice that the current directory has changed from stuberadmin to NAPE_imaging_analysis (in the above example).
-If you made no changes to where the folder should be downloaded and unzipped, the command <code class="docutils literal notranslate"><span class="pre">cd</span> <span class="pre">Downloads\NAPE_imaging_analysis-master\NAPE_imaging_postprocess-main</span></code> should take you to the correct path.</p>
+If you made no changes to where the folder should be downloaded and unzipped, the command <code class="docutils literal notranslate"><span class="pre">cd</span> <span class="pre">Downloads\NAPE_imaging_postprocess-main</span></code> should take you to the correct path.</p>
 <p>9) Now we need to create a virtual environment using conda and the napeca_post.yml file, which is located in the root folder (NAPE_imaging_postprocess-main).
 Note that we already used the <code class="docutils literal notranslate"><span class="pre">cd</span></code> command to navigate to the NAPE_imaging_postprocess-main.
 Copy, paste, and execute the following code into the anaconda prompt to recreate a new environment from the napeca_post.yml file:
@@ -258,11 +258,11 @@ Copy, paste, and execute the following code into the anaconda prompt to recreate
 <ol class="arabic simple" start="10">
 <li><p>Thus far, we have been operating under the default, base environment; we need to switch over to the new napeca_env environment we just created. We do this by typing and executing: <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">activate</span> <span class="pre">napeca_env</span></code>.</p></li>
 </ol>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="n">base</span><span class="p">)</span> <span class="n">C</span><span class="p">:</span>\<span class="n">Users</span>\<span class="n">stuberadmin</span>\<span class="n">Desktop</span>\<span class="n">NAPE_imaging_analysis</span><span class="o">&gt;</span><span class="n">conda</span> <span class="n">activate</span> <span class="n">napeca_env</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="n">napeca_env</span><span class="p">)</span> <span class="n">C</span><span class="p">:</span>\<span class="n">Users</span>\<span class="n">stuberadmin</span>\<span class="n">Desktop</span>\<span class="n">NAPE_imaging_analysis</span><span class="o">&gt;</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="n">base</span><span class="p">)</span> <span class="n">C</span><span class="p">:</span>\<span class="n">Users</span>\<span class="n">stuberadmin</span>\<span class="n">Desktop</span>\<span class="n">NAPE_imaging_analysis</span><span class="o">&gt;</span><span class="n">conda</span> <span class="n">activate</span> <span class="n">napeca_post</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">(</span><span class="n">napeca_post</span><span class="p">)</span> <span class="n">C</span><span class="p">:</span>\<span class="n">Users</span>\<span class="n">stuberadmin</span>\<span class="n">Desktop</span>\<span class="n">NAPE_imaging_analysis</span><span class="o">&gt;</span>
 </pre></div>
 </div>
-<p>Notice the environment has changed from base to napeca_env</p>
+<p>Notice the environment has changed from base to napeca_post</p>
 </div>
 <div class="section" id="using-jupyter-notebook-to-edit-and-run-jupyter-code">
 <h2>Using jupyter notebook to edit and run jupyter code<a class="headerlink" href="#using-jupyter-notebook-to-edit-and-run-jupyter-code" title="Permalink to this heading">¶</a></h2>
