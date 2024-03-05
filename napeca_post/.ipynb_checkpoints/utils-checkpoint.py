@@ -22,18 +22,18 @@ def zscore_(data, baseline_samples, baseline_data_input=None):
     
     # note: have to reshape/transpose so that samples is in first dimension for scikitlearn
     if len(data.shape) == 1: # test if data are 1 dimensional
-        if baseline_data_input is not None: # if specific baseline data is provided
+        if baseline_data_input: # if specific baseline data is provided
             baseline_data = baseline_data_input
         else:
             baseline_data = data[baseline_samples]
         scaler.fit(baseline_data.reshape(-1, 1))
         scaled_data = scaler.transform(data.reshape(-1, 1))
     else:
-        if baseline_data_input is not None:
+        if baseline_data_input:
             baseline_data = baseline_data_input
         else:
             baseline_data = data[..., baseline_samples]
-        scaler.fit(baseline_data.T) # both baseline and trial data transposed because StandardScaler fit and transforms on columns
+        scaler.fit(baseline_data.T)
         scaled_data = scaler.transform(data.T).T
     return scaled_data
 
@@ -254,10 +254,9 @@ def extract_trial_data(data, tvec, start_end_samp, frame_events, conditions, spe
     # create sample vector for baseline epoch if argument exists (for zscoring)
     if baseline_start_end_samp is not None:
         baseline_svec = np.arange(baseline_start_end_samp[0], baseline_start_end_samp[1] + 1, 1)
-        if not specific_baseline: # zero the indices since it refers to samples within a trial
+        if not specific_baseline:
             baseline_svec = (baseline_svec - baseline_start_end_samp[0]).astype('int')
-        else: # if specific window is supplied, use those indices relative to whole session
-            specific_baseline_data = data[:, baseline_svec] # dims: rois x baseline samples
+    specific_baseline_data = data[:, baseline_svec] # dims: rois x baseline samples
     
     data_dict = {}
 
@@ -305,11 +304,11 @@ def extract_trial_data(data, tvec, start_end_samp, frame_events, conditions, spe
             if baseline_start_end_samp is not None:
                 if specific_baseline:
                     # loop through cells/rois's 
-                    data_dict[condition]['zdata'] = np.array([zscore_(data_dict[condition]['data'][trial, ...], None, specific_baseline_data) for trial in range(data_dict[condition]['data'].shape[0])])
+                    zscore_along_axis = np.array([zscore_(data_dict[condition]['data'][trial, ...], None, specific_baseline_data[trial, ...]) for trial in range(data_dict[condition]['data'].shape[0])])
                 else:
                     # input data dimensions should be (trials, ROI, samples)
                     zscore_along_axis = np.apply_along_axis(zscore_, -1, data_dict[condition]['data'], baseline_svec)
-                    data_dict[condition]['zdata'] = np.squeeze(zscore_along_axis, axis=-1) # the above operation creates a singleton dim at -1 position b/c of sklearn idiosyncrasy
+                data_dict[condition]['zdata'] = np.squeeze(zscore_along_axis, axis=-1)
                 
             # also save trial-averaged (if there are multiple trials) and z-scored data
             if num_trials_cond > 1: # if more than one trial
