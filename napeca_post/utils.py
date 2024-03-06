@@ -245,7 +245,8 @@ def extract_trial_data(data, tvec, start_end_samp, frame_events, conditions, spe
         data_dict : dictionary
             1st level of dict keys: individual conditions
                 2nd level of keys :
-                    data : numpy 4d array with dimensions (trials,y,x,samples)
+                    data : numpy 3d array with dimensions (trials,roi,samples)
+                    zdata : numpy 3d array with dimensions (trials,roi,samples); data are zscored
                     num_samples : number of samples (time) in a trial
                     num_trials : total number of trials in the condition
 
@@ -300,7 +301,7 @@ def extract_trial_data(data, tvec, start_end_samp, frame_events, conditions, spe
                     data_dict[condition]['data'] = extracted_trial_dat.transpose((2, 0, 1, 3))
             else: # dimension order is correct since there's no reshaping done
                 data_dict[condition]['data'] = np.expand_dims(extracted_trial_dat, axis=0)
-
+            
             # save normalized data
             if baseline_start_end_samp is not None:
                 if specific_baseline:
@@ -321,9 +322,12 @@ def extract_trial_data(data, tvec, start_end_samp, frame_events, conditions, spe
             else:
                 # if there's only one trial, just zscore the raw data
                 if baseline_start_end_samp is not None:
-                    data_dict[condition]['ztrial_avg_data'] = np.squeeze(np.apply_along_axis(zscore_, -1,
-                                                                                              data_dict[condition]['data'],
-                                                                                              baseline_svec))
+                    if specific_baseline:
+                        data_dict[condition]['ztrial_avg_data'] = np.squeeze(data_dict[condition]['zdata'], axis=0)
+                    else:
+                        data_dict[condition]['ztrial_avg_data'] = np.squeeze(np.apply_along_axis(zscore_, -1,
+                                                                                                  data_dict[condition]['data'],
+                                                                                                  baseline_svec))
 
         # save some meta data
         data_dict[condition]['num_samples'] = num_trial_samps
