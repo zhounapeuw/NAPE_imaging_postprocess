@@ -123,7 +123,7 @@ def subplot_heatmap(axs, title, image, cmap=None, clims=None, zoom_window=None, 
 
     if cmap is None:
         cmap = ListedColormap(sns.color_palette("RdBu_r", 100))
-    im = axs.imshow(image, cmap, extent=extent_)
+    im = axs.imshow(image, cmap, extent=extent_, interpolation='none')
     axs.set_title(title, fontsize=15)
 
     if zoom_window is not None:
