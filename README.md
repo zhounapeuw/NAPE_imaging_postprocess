@@ -8,7 +8,7 @@
  3) Execute `conda env create -n napeca_post -f napeca_post.yml`. This should create a new anaconda environment called napeca_post that contains the relevant packages for running the post-processing scripts
  4) Execute `conda activate napeca_post` to enable the newly created environment
  
- # Modules:
+ # Modules (all modules are in the napeca_post folder, as well as sample data):
  * __whole_session_event_ticks__: Plot activity traces for each ROI across whole session (Optional - primarily for sanity check/prelim viz purposes) 
  * __plot_activity_contours__: Work-in-progress; Plots the cell ROI contours onto the projection image. ROI contours are color-coded based on the amplitude of the mean event-triggered response for each condition. Bar plots at the end illustrate condition preference.
  * __event_rel_analysis__: Primary event-related analysis script: Plots trial-, roi-, time-resolved event-triggered responses for each and across all ROIs. Also plots average responses in each dimension. 
