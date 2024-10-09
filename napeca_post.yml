@@ -78,6 +78,7 @@ dependencies:
     - jupyterlab-pygments==0.2.2
     - jupyterlab-server==2.25.0
     - jupyterlab-widgets==3.0.9
+    - kaleido==0.2.1
     - kiwisolver==1.4.5
     - llvmlite==0.41.0
     - markupsafe==2.1.3
