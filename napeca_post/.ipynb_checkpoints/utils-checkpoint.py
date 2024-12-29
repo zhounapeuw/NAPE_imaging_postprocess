@@ -22,21 +22,55 @@ def zscore_(data, baseline_samples, baseline_data_input=None):
     
     # note: have to reshape/transpose so that samples is in first dimension for scikitlearn
     if len(data.shape) == 1: # test if data are 1 dimensional
-        if baseline_data_input: # if specific baseline data is provided
+        if baseline_data_input is not None: # if specific baseline data is provided
             baseline_data = baseline_data_input
         else:
             baseline_data = data[baseline_samples]
         scaler.fit(baseline_data.reshape(-1, 1))
         scaled_data = scaler.transform(data.reshape(-1, 1))
     else:
-        if baseline_data_input:
+        if baseline_data_input is not None:
             baseline_data = baseline_data_input
         else:
             baseline_data = data[..., baseline_samples]
-        scaler.fit(baseline_data.T)
+        scaler.fit(baseline_data.T) # both baseline and trial data transposed because StandardScaler fit and transforms on columns
         scaled_data = scaler.transform(data.T).T
     return scaled_data
 
+def dff_(data, baseline_samples, baseline_data_input=None):
+    """
+    Perform dF/F transformation on a 2D data array using the baseline epoch.
+
+    Parameters:
+    data (np.ndarray): The data array to process (2D or 1D).
+    baseline_samples (np.ndarray or list): Indices representing the baseline epoch.
+    baseline_data_input (np.ndarray, optional): Precomputed baseline data, if provided.
+
+    Returns:
+    np.ndarray: dF/F transformed data.
+
+    Made with chatgpt4o
+    """
+    if len(data.shape) == 1:  # Test if data are 1D
+        if baseline_data_input is not None:
+            baseline_data = baseline_data_input
+        else:
+            baseline_data = data[baseline_samples]
+        baseline_mean = np.mean(baseline_data)
+        if baseline_mean == 0:
+            raise ValueError("Baseline mean is zero, division by zero error in dF/F computation.")
+        dff_data = (data - baseline_mean) / baseline_mean
+    else:
+        if baseline_data_input is not None:
+            baseline_data = baseline_data_input
+        else:
+            baseline_data = data[..., baseline_samples]
+        baseline_mean = np.mean(baseline_data, axis=-1, keepdims=True)
+        if np.any(baseline_mean == 0):
+            raise ValueError("Baseline mean contains zero values, division by zero error in dF/F computation.")
+        dff_data = (data - baseline_mean) / baseline_mean
+
+    return dff_data
 
 def check_exist_dir(path):
     if not os.path.exists(path):
@@ -123,7 +157,7 @@ def subplot_heatmap(axs, title, image, cmap=None, clims=None, zoom_window=None, 
 
     if cmap is None:
         cmap = ListedColormap(sns.color_palette("RdBu_r", 100))
-    im = axs.imshow(image, cmap, extent=extent_)
+    im = axs.imshow(image, cmap, extent=extent_, interpolation='none')
     axs.set_title(title, fontsize=15)
 
     if zoom_window is not None:
@@ -245,7 +279,8 @@ def extract_trial_data(data, tvec, start_end_samp, frame_events, conditions, spe
         data_dict : dictionary
             1st level of dict keys: individual conditions
                 2nd level of keys :
-                    data : numpy 4d array with dimensions (trials,y,x,samples)
+                    data : numpy 3d array with dimensions (trials,roi,samples)
+                    zdata : numpy 3d array with dimensions (trials,roi,samples); data are zscored
                     num_samples : number of samples (time) in a trial
                     num_trials : total number of trials in the condition
 
@@ -254,9 +289,10 @@ def extract_trial_data(data, tvec, start_end_samp, frame_events, conditions, spe
     # create sample vector for baseline epoch if argument exists (for zscoring)
     if baseline_start_end_samp is not None:
         baseline_svec = np.arange(baseline_start_end_samp[0], baseline_start_end_samp[1] + 1, 1)
-        if not specific_baseline:
+        if not specific_baseline: # zero the indices since it refers to samples within a trial
             baseline_svec = (baseline_svec - baseline_start_end_samp[0]).astype('int')
-    specific_baseline_data = data[:, baseline_svec] # dims: rois x baseline samples
+        else: # if specific window is supplied, use those indices relative to whole session
+            specific_baseline_data = data[:, baseline_svec] # dims: rois x baseline samples
     
     data_dict = {}
 
@@ -299,17 +335,21 @@ def extract_trial_data(data, tvec, start_end_samp, frame_events, conditions, spe
                     data_dict[condition]['data'] = extracted_trial_dat.transpose((2, 0, 1, 3))
             else: # dimension order is correct since there's no reshaping done
                 data_dict[condition]['data'] = np.expand_dims(extracted_trial_dat, axis=0)
-
+            
             # save normalized data
             if baseline_start_end_samp is not None:
                 if specific_baseline:
                     # loop through cells/rois's 
-                    zscore_along_axis = np.array([zscore_(data_dict[condition]['data'][trial, ...], None, specific_baseline_data[trial, ...]) for trial in range(data_dict[condition]['data'].shape[0])])
+                    data_dict[condition]['zdata'] = np.array([zscore_(data_dict[condition]['data'][trial, ...], None, specific_baseline_data) for trial in range(data_dict[condition]['data'].shape[0])])
+                    data_dict[condition]['dff_data'] = np.array([dff_(data_dict[condition]['data'][trial, ...], None, specific_baseline_data) for trial in range(data_dict[condition]['data'].shape[0])])
                 else:
                     # input data dimensions should be (trials, ROI, samples)
                     zscore_along_axis = np.apply_along_axis(zscore_, -1, data_dict[condition]['data'], baseline_svec)
-                data_dict[condition]['zdata'] = np.squeeze(zscore_along_axis, axis=-1)
-                
+                    data_dict[condition]['zdata'] = np.squeeze(zscore_along_axis, axis=-1) # the above operation creates a singleton dim at -1 position b/c of sklearn idiosyncrasy
+
+                    dff_along_axis = np.apply_along_axis(dff_, -1, data_dict[condition]['data'], baseline_svec)
+                    data_dict[condition]['dff_data'] = np.squeeze(dff_along_axis, axis=-1)
+                    
             # also save trial-averaged (if there are multiple trials) and z-scored data
             if num_trials_cond > 1: # if more than one trial
                 data_dict[condition]['trial_avg_data'] = np.nanmean(data_dict[condition]['data'], axis=0)
@@ -320,9 +360,12 @@ def extract_trial_data(data, tvec, start_end_samp, frame_events, conditions, spe
             else:
                 # if there's only one trial, just zscore the raw data
                 if baseline_start_end_samp is not None:
-                    data_dict[condition]['ztrial_avg_data'] = np.squeeze(np.apply_along_axis(zscore_, -1,
-                                                                                              data_dict[condition]['data'],
-                                                                                              baseline_svec))
+                    if specific_baseline:
+                        data_dict[condition]['ztrial_avg_data'] = np.squeeze(data_dict[condition]['zdata'], axis=0)
+                    else:
+                        data_dict[condition]['ztrial_avg_data'] = np.squeeze(np.apply_along_axis(zscore_, -1,
+                                                                                                  data_dict[condition]['data'],
+                                                                                                  baseline_svec))
 
         # save some meta data
         data_dict[condition]['num_samples'] = num_trial_samps

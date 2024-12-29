@@ -37,6 +37,40 @@ def zscore_(data, baseline_samples, baseline_data_input=None):
         scaled_data = scaler.transform(data.T).T
     return scaled_data
 
+def dff_(data, baseline_samples, baseline_data_input=None):
+    """
+    Perform dF/F transformation on a 2D data array using the baseline epoch.
+
+    Parameters:
+    data (np.ndarray): The data array to process (2D or 1D).
+    baseline_samples (np.ndarray or list): Indices representing the baseline epoch.
+    baseline_data_input (np.ndarray, optional): Precomputed baseline data, if provided.
+
+    Returns:
+    np.ndarray: dF/F transformed data.
+
+    Made with chatgpt4o
+    """
+    if len(data.shape) == 1:  # Test if data are 1D
+        if baseline_data_input is not None:
+            baseline_data = baseline_data_input
+        else:
+            baseline_data = data[baseline_samples]
+        baseline_mean = np.mean(baseline_data)
+        if baseline_mean == 0:
+            raise ValueError("Baseline mean is zero, division by zero error in dF/F computation.")
+        dff_data = (data - baseline_mean) / baseline_mean
+    else:
+        if baseline_data_input is not None:
+            baseline_data = baseline_data_input
+        else:
+            baseline_data = data[..., baseline_samples]
+        baseline_mean = np.mean(baseline_data, axis=-1, keepdims=True)
+        if np.any(baseline_mean == 0):
+            raise ValueError("Baseline mean contains zero values, division by zero error in dF/F computation.")
+        dff_data = (data - baseline_mean) / baseline_mean
+
+    return dff_data
 
 def check_exist_dir(path):
     if not os.path.exists(path):
@@ -307,11 +341,14 @@ def extract_trial_data(data, tvec, start_end_samp, frame_events, conditions, spe
                 if specific_baseline:
                     # loop through cells/rois's 
                     data_dict[condition]['zdata'] = np.array([zscore_(data_dict[condition]['data'][trial, ...], None, specific_baseline_data) for trial in range(data_dict[condition]['data'].shape[0])])
+                    data_dict[condition]['dff_data'] = np.array([dff_(data_dict[condition]['data'][trial, ...], None, specific_baseline_data) for trial in range(data_dict[condition]['data'].shape[0])])
                 else:
                     # input data dimensions should be (trials, ROI, samples)
                     zscore_along_axis = np.apply_along_axis(zscore_, -1, data_dict[condition]['data'], baseline_svec)
                     data_dict[condition]['zdata'] = np.squeeze(zscore_along_axis, axis=-1) # the above operation creates a singleton dim at -1 position b/c of sklearn idiosyncrasy
-                
+
+                    data_dict[condition]['dff_data'] = np.apply_along_axis(dff_, -1, data_dict[condition]['data'], baseline_svec)
+                    
             # also save trial-averaged (if there are multiple trials) and z-scored data
             if num_trials_cond > 1: # if more than one trial
                 data_dict[condition]['trial_avg_data'] = np.nanmean(data_dict[condition]['data'], axis=0)
